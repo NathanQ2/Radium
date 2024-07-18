@@ -23,5 +23,6 @@ namespace Radium::Parser
 
         std::optional<NodeExpression> parseExpression();
         std::optional<NodeStatementExit> parseExit();
+        std::optional<NodeStatementLet> parseLet();
     };
 }

@@ -26,6 +26,22 @@ namespace Radium::Parser
                     std::cerr << "Failed to parse exit statement!" << std::endl;
                     exit(EXIT_FAILURE);
                 }
+
+                continue;
+            }
+            if(peek().value().type == Tokenizer::TokenType::let)
+            {
+                if(auto letStatement = parseLet())
+                {
+                    statements.push_back(NodeStatement {.variant = letStatement.value()});
+                }
+                else
+                {
+                    std::cerr << "Failed to parse variable declaration!" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+
+                continue;
             }
         }
 
@@ -47,12 +63,23 @@ namespace Radium::Parser
 
     std::optional<NodeExpression> Parser::parseExpression()
     {
-        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::literal_int)
-            return std::nullopt;
+        if (peek().has_value() && peek().value().type == Tokenizer::TokenType::literal_int)
+        {
+            auto expr = std::optional<NodeExpression>(NodeExpressionIntLit {.value = peek().value().value.value()});
+            consume();
 
-        auto expr = std::optional<NodeExpression>(NodeExpressionIntLit {.value = peek().value().value.value()});
-        consume();
-        return expr;
+            return expr;
+        }
+
+        if(peek().has_value() && peek().value().type == Tokenizer::TokenType::identifier)
+        {
+            auto expr = std::optional<NodeExpression>(NodeExpressionIdentifer {.value = peek().value().value.value()});
+            consume();
+
+            return expr;
+        }
+
+        return std::nullopt;
     }
 
     std::optional<NodeStatementExit> Parser::parseExit()
@@ -82,5 +109,32 @@ namespace Radium::Parser
 
         consume();
         return NodeStatementExit {.expression = expression.value()};
+    }
+
+    std::optional<NodeStatementLet> Parser::parseLet()
+    {
+        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::let)
+            return std::nullopt;
+
+        consume();
+        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::identifier)
+            return std::nullopt;
+
+        std::string identifier = peek().value().value.value();
+
+        consume();
+        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::equal_single)
+            return std::nullopt;
+
+        consume();
+        std::optional<NodeExpression> expression = parseExpression();
+        if(!expression.has_value())
+            return std::nullopt;
+
+        if(!peek().has_value() || peek().value().type != Tokenizer::semicolon)
+            return std::nullopt;
+
+        consume();
+        return NodeStatementLet {.identifier = identifier, .expression = expression.value()};
     }
 }
