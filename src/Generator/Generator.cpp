@@ -3,6 +3,8 @@
 #include <utility>
 #include <iostream>
 
+#include "../Logger/Logger.h"
+
 
 namespace Radium::Generator
 {
@@ -69,7 +71,7 @@ namespace Radium::Generator
         generateExpression(statement.expression, "rax");
         if(m_identifierStackPositions.contains(statement.identifier))
         {
-            std::cerr << "ERROR: Identifier `" << statement.identifier << "` Has been declared twice!" << std::endl;
+            RA_ERROR("Identifier '{0}' has already been declared!", statement.identifier);
 
             exit(EXIT_FAILURE);
         }
@@ -103,7 +105,7 @@ namespace Radium::Generator
     {
         if (!m_identifierStackPositions.contains(expression.value))
         {
-            std::cerr << "ERROR: identifier `" << expression.value << "` has not been defined!" << std::endl;
+            RA_ERROR("Identifier '{0}' has not been declared!");
 
             exit(EXIT_FAILURE);
         }

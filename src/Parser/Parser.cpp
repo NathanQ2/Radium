@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "../Logger/Logger.h"
+
 namespace Radium::Parser
 {
     Parser::Parser(std::vector<Tokenizer::Token> tokens)
@@ -23,7 +25,7 @@ namespace Radium::Parser
                 }
                 else
                 {
-                    std::cerr << "Failed to parse exit statement!" << std::endl;
+                    RA_ERROR("Failed to parse exit staement!");
                     exit(EXIT_FAILURE);
                 }
 
@@ -37,7 +39,7 @@ namespace Radium::Parser
                 }
                 else
                 {
-                    std::cerr << "Failed to parse variable declaration!" << std::endl;
+                    RA_ERROR("Failed to parse variable declaration!");
                     exit(EXIT_FAILURE);
                 }
 

@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "Generator/Generator.h"
+#include "Logger/Logger.h"
 #include "Parser/Parser.h"
 #include "Tokenizer/Tokenizer.h"
 
@@ -11,9 +12,10 @@ using namespace Radium;
 
 int main(int argc, char* argv[])
 {
+    Logger::init();
     if (argc != 2)
     {
-        std::cerr << "ERR: Expected 2 arguments but got " << argc << std::endl;
+        RA_ERROR("Expected 2 arguments but got {0}", argc);
 
         return EXIT_FAILURE;
     }
@@ -36,7 +38,8 @@ int main(int argc, char* argv[])
 
     Generator::Generator generator(root);
     std::string output = generator.generate();
-    std::cout << "RESULT:\n" << output << std::endl;
+    RA_TRACE("Compilation result:\n {0}", output);
+
     std::ofstream ofs("a.asm");
     ofs << output;
     ofs.close();
