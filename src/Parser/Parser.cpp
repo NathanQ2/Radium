@@ -63,20 +63,124 @@ namespace Radium::Parser
         return m_tokens.at(m_index++);
     }
 
+    bool Parser::ifType(int offset, Tokenizer::TokenType type)
+    {
+        return peek(offset).has_value() && peek(offset).value().type == type;
+    }
+
     std::optional<NodeExpression> Parser::parseExpression()
     {
-        if (peek().has_value() && peek().value().type == Tokenizer::TokenType::literal_int)
+        auto intLit = tryParseExpressionIntLit();
+        if (intLit.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
         {
-            auto expr = std::optional<NodeExpression>(NodeExpressionIntLit {.value = peek().value().value.value()});
             consume();
+            return std::optional<NodeExpression>(intLit);
+        }
+
+        auto identifier = tryParseExpressionIdentifier();
+        if (identifier.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
+        {
+            consume();
+            return std::optional<NodeExpression>(identifier);
+        }
+
+        if (ifType(1, Tokenizer::TokenType::operator_add))
+        {
+            NodeExpression* lhs = nullptr;
+            NodeExpression* rhs = nullptr;
+            if(ifType(Tokenizer::TokenType::literal_int))
+            {
+                if(auto intLit = tryParseExpressionIntLit())
+                {
+                    consume();
+                    lhs = new NodeExpression { .variant = intLit.value() };
+                }
+            }
+            else if(ifType(Tokenizer::TokenType::identifier))
+            {
+                if (auto identifier = tryParseExpressionIdentifier())
+                {
+                    consume();
+                    lhs = new NodeExpression { .variant = identifier.value() };
+                }
+            }
+            consume();
+
+            if(ifType(Tokenizer::TokenType::literal_int))
+            {
+                if(auto intLit = tryParseExpressionIntLit())
+                {
+                    consume();
+                    rhs = new NodeExpression { .variant = intLit.value() };
+                }
+            }
+            else if(ifType(Tokenizer::TokenType::identifier))
+            {
+                if (auto identifier = tryParseExpressionIdentifier())
+                {
+                    consume();
+                    rhs = new NodeExpression { .variant = identifier.value() };
+                }
+            }
+
+            if(lhs == nullptr || rhs == nullptr)
+            {
+                return std::nullopt;
+            }
+
+            return NodeExpression { .variant = NodeExpressionAdd { .lhs = lhs, .rhs = rhs }};
+        }
+
+        // if (peek().has_value() && peek().value().type == Tokenizer::TokenType::literal_int  &&
+        //     (peek(1).has_value() && peek(1).value().type == Tokenizer::TokenType::operator_add) &&
+        //     (peek(2).has_value() && peek(2).value().type == Tokenizer::TokenType::literal_int))
+        // {
+        //     const auto lhs = new NodeExpression { .variant = NodeExpressionIntLit {.value = peek().value().value.value()}};
+        //     const auto rhs = new NodeExpression { .variant = NodeExpressionIntLit {.value = peek(2).value().value.value()}};
+        //
+        //     auto expr = std::optional<NodeExpression>(NodeExpressionAdd {.lhs = lhs, .rhs = rhs});
+        //     consume();
+        //     consume();
+        //     consume();
+        //
+        //     return expr;
+        // }
+        //
+        // if (peek().has_value() && peek().value().type == Tokenizer::TokenType::literal_int  &&
+        //     (peek(1).has_value() && peek(1).value().type == Tokenizer::TokenType::operator_add) &&
+        //     (peek(2).has_value() && peek(2).value().type == Tokenizer::TokenType::identifier))
+        // {
+        //     const auto lhs = new NodeExpression { .variant = NodeExpressionIntLit {.value = peek().value().value.value()}};
+        //     const auto rhs = new NodeExpression { .variant = NodeExpressionIdentifer {.value = peek(2).value().value.value()}};
+        //
+        //     auto expr = std::optional<NodeExpression>(NodeExpressionAdd {.lhs = lhs, .rhs = rhs});
+        //     consume();
+        //     consume();
+        //     consume();
+        //
+        //     return expr;
+        // }
+
+        return std::nullopt;
+    }
+
+    std::optional<NodeExpressionIntLit> Parser::tryParseExpressionIntLit()
+    {
+        if (ifType(Tokenizer::TokenType::literal_int))
+        {
+            auto expr = NodeExpressionIntLit {.value = peek().value().value.value()};
 
             return expr;
         }
 
-        if(peek().has_value() && peek().value().type == Tokenizer::TokenType::identifier)
+        return std::nullopt;
+    }
+
+    std::optional<NodeExpressionIdentifier> Parser::tryParseExpressionIdentifier()
+    {
+        if(ifType(Tokenizer::TokenType::identifier) && !ifType(Tokenizer::TokenType::operator_add))
         {
-            auto expr = std::optional<NodeExpression>(NodeExpressionIdentifer {.value = peek().value().value.value()});
-            consume();
+            auto expr = NodeExpressionIdentifier {.value = peek().value().value.value()};
 
             return expr;
         }

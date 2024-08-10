@@ -11,6 +11,7 @@ namespace Radium::Tokenizer
         equal_single,
         semicolon,
         literal_int,
-        builtin_exit
+        builtin_exit,
+        operator_add
     };
 }

@@ -60,6 +60,15 @@ namespace Radium::Tokenizer
                 continue;
             }
 
+            if(peek().value() == '+' && (!peek(1).has_value() || peek(1).value() == ' '))
+            {
+                tokens.push_back(Token { .type = operator_add });
+                buf.clear();
+                consume();
+
+                continue;
+            }
+
             if(std::isalpha(peek().value()))
             {
                 while(std::isalpha(peek().value()))

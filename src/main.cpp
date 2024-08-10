@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 
     Generator::Generator generator(root);
     std::string output = generator.generate();
-    RA_TRACE("Compilation result:\n {0}", output);
+    RA_TRACE("Compilation result:\n{0}", output);
 
     std::ofstream ofs("a.asm");
     ofs << output;

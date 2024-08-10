@@ -33,7 +33,8 @@ namespace Radium::Generator
 
         void generateExpression(const NodeExpression& expression, const std::string& desinationRegister);
         void generateExpressionIntLit(const NodeExpressionIntLit& expression, const std::string& destinationRegister);
-        void generateExpressionIdentifier(const NodeExpressionIdentifer& expression, const std::string& destinationRegister);
+        void generateExpressionIdentifier(const NodeExpressionIdentifier& expression, const std::string& destinationRegister);
+        void generateExpressionAdd(const NodeExpressionAdd& expression, const std::string& destinationRegister, const std::string& tempRegister);
     };
 
 }

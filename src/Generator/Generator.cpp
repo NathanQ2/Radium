@@ -87,9 +87,13 @@ namespace Radium::Generator
             {
                 generateExpressionIntLit(expr, desinationRegister);
             }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIdentifer>)
+            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIdentifier>)
             {
                 generateExpressionIdentifier(expr, desinationRegister);
+            }
+            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionAdd>)
+            {
+                generateExpressionAdd(expr, desinationRegister, "rdi");
             }
         }, expression.variant);
     }
@@ -100,7 +104,7 @@ namespace Radium::Generator
         mov(destinationRegister, expression.value);
     }
 
-    void Generator::generateExpressionIdentifier(const NodeExpressionIdentifer &expression,
+    void Generator::generateExpressionIdentifier(const NodeExpressionIdentifier &expression,
         const std::string &destinationRegister)
     {
         if (!m_identifierStackPositions.contains(expression.value))
@@ -115,5 +119,14 @@ namespace Radium::Generator
         ss << "QWORD [rsp+" << (m_stackSizeBytes - offset) << "]";
         push(ss.str(), 8);
         pop(destinationRegister, 8);
+    }
+
+    void Generator::generateExpressionAdd(const NodeExpressionAdd &expression, const std::string &destinationRegister,
+        const std::string &tempRegister)
+    {
+        generateExpression(*expression.lhs, destinationRegister);
+        generateExpression(*expression.rhs, tempRegister);
+
+        m_sstream << "    add " << destinationRegister << ", " << tempRegister << "\n";
     }
 }

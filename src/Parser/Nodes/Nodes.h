@@ -12,14 +12,26 @@ namespace Radium::Parser::Nodes
         std::string value;
     };
 
-    struct NodeExpressionIdentifer
+    struct NodeExpressionIdentifier
     {
         std::string value;
     };
 
+    struct NodeExpression;
+
+    struct NodeExpressionAdd
+    {
+        NodeExpression* lhs;
+        NodeExpression* rhs;
+    };
+
     struct NodeExpression
     {
-        std::variant<NodeExpressionIntLit, NodeExpressionIdentifer> variant;
+        std::variant<
+            NodeExpressionIntLit,
+            NodeExpressionIdentifier,
+            NodeExpressionAdd
+        > variant;
     };
 
 

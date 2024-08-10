@@ -21,7 +21,13 @@ namespace Radium::Parser
         std::optional<Tokenizer::Token> peek(int offset = 0);
         std::optional<Tokenizer::Token> consume();
 
+        bool ifType(int offset, Tokenizer::TokenType type);
+        bool ifType(Tokenizer::TokenType type) { return ifType(0, type); }
+
+
         std::optional<NodeExpression> parseExpression();
+        std::optional<NodeExpressionIntLit> tryParseExpressionIntLit();
+        std::optional<NodeExpressionIdentifier> tryParseExpressionIdentifier();
         std::optional<NodeStatementExit> parseExit();
         std::optional<NodeStatementLet> parseLet();
     };
