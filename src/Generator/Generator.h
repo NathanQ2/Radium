@@ -20,12 +20,16 @@ namespace Radium::Generator
         std::stringstream m_sstream;
 
         std::unordered_map<std::string, size_t> m_identifierStackPositions;
+        std::unordered_map<std::string, bool> m_registers;
 
         void mov(const std::string& reg, const std::string& val);
 
         size_t m_stackSizeBytes;
         void push(const std::string& reg, size_t sizeBytes);
         void pop(const std::string& reg, size_t sizeBytes);
+
+        std::string pushRegister();
+        void popRegister(const std::string& reg);
 
         void generateStatement(const NodeStatement& statement);
         void generateStatementExit(const NodeStatementExit& statement);

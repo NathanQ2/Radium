@@ -13,15 +13,24 @@ namespace Radium::Generator
           m_sstream(),
           m_stackSizeBytes(0)
     {
+        m_registers["rax"] = false;
+        m_registers["rbx"] = false;
+        m_registers["rcx"] = false;
+        m_registers["rdx"] = false;
+        m_registers["rsi"] = false;
+        m_registers["rdi"] = false;
+        m_registers["rsp"] = false;
+        m_registers["rbp"] = false;
     }
 
     std::string Generator::generate()
     {
         // boilerplate
-        m_sstream << "global _start\n_start:\n";
+        m_sstream << "global _start\n\n_start:\n";
         for (NodeStatement& statement : m_nodeRoot.statements)
         {
             generateStatement(statement);
+            m_sstream << "\n";
         }
 
         return m_sstream.str();
@@ -44,6 +53,25 @@ namespace Radium::Generator
         m_stackSizeBytes -= sizeBytes;
     }
 
+    std::string Generator::pushRegister()
+    {
+        for(const auto&[reg, used] : m_registers)
+        {
+            if (used == false) {
+                m_registers[reg] = true;
+                return reg;
+            }
+        }
+
+        RA_ERROR("Ran out of registers!");
+        exit(EXIT_FAILURE);
+    }
+
+    void Generator::popRegister(const std::string& reg)
+    {
+        m_registers[reg] = false;
+    }
+
     void Generator::generateStatement(const NodeStatement& statement)
     {
         std::visit([this]<typename T>(T&& stmt)
@@ -61,21 +89,26 @@ namespace Radium::Generator
 
     void Generator::generateStatementExit(const NodeStatementExit& statement)
     {
-        mov("rax", "60");
+        m_sstream << "    ; exit\n";
+
         generateExpression(statement.expression, "rdi");
+        mov("rax", "60");
         m_sstream << "    syscall\n";
     }
 
     void Generator::generateStatementLet(const NodeStatementLet &statement)
     {
-        generateExpression(statement.expression, "rax");
+        const std::string reg = pushRegister();
+        m_sstream << "    ; let\n";
+        generateExpression(statement.expression, reg);
         if(m_identifierStackPositions.contains(statement.identifier))
         {
             RA_ERROR("Identifier '{0}' has already been declared!", statement.identifier);
 
             exit(EXIT_FAILURE);
         }
-        push("rax", 8);
+        push(reg, 8);
+        popRegister(reg);
         m_identifierStackPositions[statement.identifier] = m_stackSizeBytes;
     }
 
@@ -93,7 +126,9 @@ namespace Radium::Generator
             }
             else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionAdd>)
             {
-                generateExpressionAdd(expr, desinationRegister, "rdi");
+                const std::string reg = pushRegister();
+                generateExpressionAdd(expr, desinationRegister, reg);
+                popRegister(reg);
             }
         }, expression.variant);
     }

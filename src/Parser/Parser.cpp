@@ -25,11 +25,11 @@ namespace Radium::Parser
                 }
                 else
                 {
-                    RA_ERROR("Failed to parse exit staement!");
+                    RA_ERROR("Failed to parse exit statement!");
                     exit(EXIT_FAILURE);
                 }
 
-                continue;
+                break;
             }
             if(peek().value().type == Tokenizer::TokenType::let)
             {
@@ -58,9 +58,10 @@ namespace Radium::Parser
         return m_tokens.at(m_index + offset);
     }
 
-    std::optional<Tokenizer::Token> Parser::consume()
+    std::optional<Tokenizer::Token> Parser::consume(int offset)
     {
-        return m_tokens.at(m_index++);
+        m_index += offset;
+        return m_tokens.at(m_index);
     }
 
     bool Parser::ifType(int offset, Tokenizer::TokenType type)
@@ -68,31 +69,35 @@ namespace Radium::Parser
         return peek(offset).has_value() && peek(offset).value().type == type;
     }
 
-    std::optional<NodeExpression> Parser::parseExpression()
+    std::optional<NodeExpression> Parser::parseExpression(int offset)
     {
-        auto intLit = tryParseExpressionIntLit();
+        // just int lit
+        auto intLit = tryParseExpressionIntLit(offset);
         if (intLit.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
         {
-            consume();
+            consume(offset + 1);
             return std::optional<NodeExpression>(intLit);
         }
 
-        auto identifier = tryParseExpressionIdentifier();
+        // just identifier
+        auto identifier = tryParseExpressionIdentifier(offset);
         if (identifier.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
         {
-            consume();
+            consume(offset + 1);
             return std::optional<NodeExpression>(identifier);
         }
 
+        // add operator to the right
         if (ifType(1, Tokenizer::TokenType::operator_add))
         {
             NodeExpression* lhs = nullptr;
             NodeExpression* rhs = nullptr;
+
             if(ifType(Tokenizer::TokenType::literal_int))
             {
-                if(auto intLit = tryParseExpressionIntLit())
+                if(auto intLit = tryParseExpressionIntLit(offset))
                 {
-                    consume();
+                    consume(offset + 1);
                     lhs = new NodeExpression { .variant = intLit.value() };
                 }
             }
@@ -100,27 +105,16 @@ namespace Radium::Parser
             {
                 if (auto identifier = tryParseExpressionIdentifier())
                 {
-                    consume();
+                    consume(offset + 1);
                     lhs = new NodeExpression { .variant = identifier.value() };
                 }
             }
-            consume();
+            consume(offset + 1);
 
-            if(ifType(Tokenizer::TokenType::literal_int))
+            auto rhExpr = parseExpression();
+            if(rhExpr.has_value())
             {
-                if(auto intLit = tryParseExpressionIntLit())
-                {
-                    consume();
-                    rhs = new NodeExpression { .variant = intLit.value() };
-                }
-            }
-            else if(ifType(Tokenizer::TokenType::identifier))
-            {
-                if (auto identifier = tryParseExpressionIdentifier())
-                {
-                    consume();
-                    rhs = new NodeExpression { .variant = identifier.value() };
-                }
+                rhs = new NodeExpression { .variant = rhExpr.value().variant };
             }
 
             if(lhs == nullptr || rhs == nullptr)
@@ -131,44 +125,14 @@ namespace Radium::Parser
             return NodeExpression { .variant = NodeExpressionAdd { .lhs = lhs, .rhs = rhs }};
         }
 
-        // if (peek().has_value() && peek().value().type == Tokenizer::TokenType::literal_int  &&
-        //     (peek(1).has_value() && peek(1).value().type == Tokenizer::TokenType::operator_add) &&
-        //     (peek(2).has_value() && peek(2).value().type == Tokenizer::TokenType::literal_int))
-        // {
-        //     const auto lhs = new NodeExpression { .variant = NodeExpressionIntLit {.value = peek().value().value.value()}};
-        //     const auto rhs = new NodeExpression { .variant = NodeExpressionIntLit {.value = peek(2).value().value.value()}};
-        //
-        //     auto expr = std::optional<NodeExpression>(NodeExpressionAdd {.lhs = lhs, .rhs = rhs});
-        //     consume();
-        //     consume();
-        //     consume();
-        //
-        //     return expr;
-        // }
-        //
-        // if (peek().has_value() && peek().value().type == Tokenizer::TokenType::literal_int  &&
-        //     (peek(1).has_value() && peek(1).value().type == Tokenizer::TokenType::operator_add) &&
-        //     (peek(2).has_value() && peek(2).value().type == Tokenizer::TokenType::identifier))
-        // {
-        //     const auto lhs = new NodeExpression { .variant = NodeExpressionIntLit {.value = peek().value().value.value()}};
-        //     const auto rhs = new NodeExpression { .variant = NodeExpressionIdentifer {.value = peek(2).value().value.value()}};
-        //
-        //     auto expr = std::optional<NodeExpression>(NodeExpressionAdd {.lhs = lhs, .rhs = rhs});
-        //     consume();
-        //     consume();
-        //     consume();
-        //
-        //     return expr;
-        // }
-
         return std::nullopt;
     }
 
-    std::optional<NodeExpressionIntLit> Parser::tryParseExpressionIntLit()
+    std::optional<NodeExpressionIntLit> Parser::tryParseExpressionIntLit(int offset)
     {
-        if (ifType(Tokenizer::TokenType::literal_int))
+        if (ifType(offset, Tokenizer::TokenType::literal_int))
         {
-            auto expr = NodeExpressionIntLit {.value = peek().value().value.value()};
+            auto expr = NodeExpressionIntLit {.value = peek(offset).value().value.value()};
 
             return expr;
         }
@@ -176,11 +140,11 @@ namespace Radium::Parser
         return std::nullopt;
     }
 
-    std::optional<NodeExpressionIdentifier> Parser::tryParseExpressionIdentifier()
+    std::optional<NodeExpressionIdentifier> Parser::tryParseExpressionIdentifier(int offset)
     {
-        if(ifType(Tokenizer::TokenType::identifier) && !ifType(Tokenizer::TokenType::operator_add))
+        if(ifType(offset, Tokenizer::TokenType::identifier) && !ifType(Tokenizer::TokenType::operator_add))
         {
-            auto expr = NodeExpressionIdentifier {.value = peek().value().value.value()};
+            auto expr = NodeExpressionIdentifier {.value = peek(offset).value().value.value()};
 
             return expr;
         }
@@ -190,7 +154,7 @@ namespace Radium::Parser
 
     std::optional<NodeStatementExit> Parser::parseExit()
     {
-        // Expects current token to be of type bultin_exit
+        // Expects current token to be of type builtin_exit
         if (!peek().has_value() || peek().value().type != Tokenizer::TokenType::builtin_exit)
             return std::nullopt;
 
@@ -213,7 +177,6 @@ namespace Radium::Parser
         if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::semicolon)
             return std::nullopt;
 
-        consume();
         return NodeStatementExit {.expression = expression.value()};
     }
 
