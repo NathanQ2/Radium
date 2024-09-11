@@ -22,7 +22,7 @@ namespace Radium::Generator
         std::unordered_map<std::string, size_t> m_identifierStackPositions;
         std::unordered_map<std::string, bool> m_registers;
 
-        void mov(const std::string& reg, const std::string& val);
+        void mov(const std::string& dest, const std::string& source);
 
         size_t m_stackSizeBytes;
         void push(const std::string& reg, size_t sizeBytes);
@@ -35,10 +35,12 @@ namespace Radium::Generator
         void generateStatementExit(const NodeStatementExit& statement);
         void generateStatementLet(const NodeStatementLet& statement);
 
+        void generateTerm(const Term &term, const std::string &destinationRegister);
+        void generateTermIntLit(const TermIntLit& expression, const std::string& destinationRegister);
+        void generateTermIdentifier(const TermIdentifier& expression, const std::string& destinationRegister);
         void generateExpression(const NodeExpression& expression, const std::string& desinationRegister);
-        void generateExpressionIntLit(const NodeExpressionIntLit& expression, const std::string& destinationRegister);
-        void generateExpressionIdentifier(const NodeExpressionIdentifier& expression, const std::string& destinationRegister);
         void generateExpressionAdd(const NodeExpressionAdd& expression, const std::string& destinationRegister, const std::string& tempRegister);
+        void generateExpressionMult(const NodeExpressionMult& expression, const std::string& destinationRegister, const std::string& tempRegister);
     };
 
 }

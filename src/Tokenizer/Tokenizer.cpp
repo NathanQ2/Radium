@@ -17,6 +17,15 @@ namespace Radium::Tokenizer
         std::string buf;
         while(peek().has_value())
         {
+            // basic comments
+            if(peek().value() == '/' && peek(1).has_value() && peek(1).value() == '/')
+            {
+                while (peek().has_value() && peek().value() != '\n')
+                {
+                    consume();
+                }
+            }
+
             if(std::isspace(peek().value()))
             {
                 consume();
@@ -62,7 +71,16 @@ namespace Radium::Tokenizer
 
             if(peek().value() == '+' && (!peek(1).has_value() || peek(1).value() == ' '))
             {
-                tokens.push_back(Token { .type = operator_add });
+                tokens.push_back(Token { .type = bin_operator_add });
+                buf.clear();
+                consume();
+
+                continue;
+            }
+
+            if (peek().value() == '*' && (!peek(1).has_value() || peek(1).value() == ' '))
+            {
+                tokens.push_back(Token {.type = bin_operator_mult});
                 buf.clear();
                 consume();
 

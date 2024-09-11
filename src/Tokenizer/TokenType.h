@@ -12,6 +12,7 @@ namespace Radium::Tokenizer
         semicolon,
         literal_int,
         builtin_exit,
-        operator_add
+        bin_operator_add,
+        bin_operator_mult
     };
 }

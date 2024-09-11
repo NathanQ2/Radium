@@ -36,9 +36,9 @@ namespace Radium::Generator
         return m_sstream.str();
     }
 
-    void Generator::mov(const std::string &reg, const std::string &val)
+    void Generator::mov(const std::string &dest, const std::string &source)
     {
-        m_sstream << "    mov " << reg << ", " << val << "\n";
+        m_sstream << "    mov " << dest << ", " << source << "\n";
     }
 
     void Generator::push(const std::string &reg, const size_t sizeBytes)
@@ -116,13 +116,9 @@ namespace Radium::Generator
     {
         std::visit([this, desinationRegister]<typename T>(T&& expr)
         {
-            if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIntLit>)
+            if constexpr (std::is_same_v<std::decay_t<T>, Term>)
             {
-                generateExpressionIntLit(expr, desinationRegister);
-            }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIdentifier>)
-            {
-                generateExpressionIdentifier(expr, desinationRegister);
+                generateTerm(expr, desinationRegister);
             }
             else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionAdd>)
             {
@@ -130,16 +126,46 @@ namespace Radium::Generator
                 generateExpressionAdd(expr, desinationRegister, reg);
                 popRegister(reg);
             }
+            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionMult>)
+            {
+                const std::string reg = pushRegister();
+                generateExpressionMult(expr, desinationRegister, reg);
+                popRegister(reg);
+            }
+            else
+            {
+                // one of above if blocks should be called
+                assert(false);
+            }
         }, expression.variant);
     }
 
-    void Generator::generateExpressionIntLit(const NodeExpressionIntLit &expression,
+    void Generator::generateTerm(const Term &term, const std::string &destinationRegister)
+    {
+        std::visit([this, destinationRegister]<typename T>(T&& term) {
+            if constexpr (std::is_same_v<std::decay_t<T>, TermIntLit>)
+            {
+                generateTermIntLit(term, destinationRegister);
+            }
+            else if constexpr (std::is_same_v<std::decay_t<T>, TermIdentifier>)
+            {
+                generateTermIdentifier(term, destinationRegister);
+            }
+            else
+            {
+                // one of above if blocks should be called
+                assert(false);
+            }
+        }, term.variant);
+    }
+
+    void Generator::generateTermIntLit(const TermIntLit &expression,
         const std::string &destinationRegister)
     {
         mov(destinationRegister, expression.value);
     }
 
-    void Generator::generateExpressionIdentifier(const NodeExpressionIdentifier &expression,
+    void Generator::generateTermIdentifier(const TermIdentifier &expression,
         const std::string &destinationRegister)
     {
         if (!m_identifierStackPositions.contains(expression.value))
@@ -163,5 +189,23 @@ namespace Radium::Generator
         generateExpression(*expression.rhs, tempRegister);
 
         m_sstream << "    add " << destinationRegister << ", " << tempRegister << "\n";
+    }
+
+    void Generator::generateExpressionMult(const NodeExpressionMult &expression, const std::string &destinationRegister,
+        const std::string &tempRegister)
+    {
+        if (m_registers["rax"] == true)
+        {
+            RA_ERROR("rax in use!");
+            // is this even an issue?
+        }
+        generateExpression(*expression.lhs, "rax");
+        generateExpression(*expression.rhs, tempRegister);
+
+        // destination = rax
+        m_sstream << "    mul " << tempRegister << "\n";
+
+        if (destinationRegister != "rax")
+            mov(destinationRegister, "rax");
     }
 }

@@ -7,14 +7,19 @@
 
 namespace Radium::Parser::Nodes
 {
-    struct NodeExpressionIntLit
+    struct TermIntLit
     {
         std::string value;
     };
 
-    struct NodeExpressionIdentifier
+    struct TermIdentifier
     {
         std::string value;
+    };
+
+    struct Term
+    {
+        std::variant<TermIntLit, TermIdentifier> variant;
     };
 
     struct NodeExpression;
@@ -25,12 +30,18 @@ namespace Radium::Parser::Nodes
         NodeExpression* rhs;
     };
 
+    struct NodeExpressionMult
+    {
+        NodeExpression* lhs;
+        NodeExpression* rhs;
+    };
+
     struct NodeExpression
     {
         std::variant<
-            NodeExpressionIntLit,
-            NodeExpressionIdentifier,
-            NodeExpressionAdd
+            Term,
+            NodeExpressionAdd,
+            NodeExpressionMult
         > variant;
     };
 

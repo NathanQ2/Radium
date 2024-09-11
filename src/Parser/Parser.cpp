@@ -69,70 +69,104 @@ namespace Radium::Parser
         return peek(offset).has_value() && peek(offset).value().type == type;
     }
 
-    std::optional<NodeExpression> Parser::parseExpression(int offset)
+    std::optional<Term> Parser::parseTerm()
     {
-        // just int lit
-        auto intLit = tryParseExpressionIntLit(offset);
-        if (intLit.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
+        if(auto intLit = parseTermIntLit())
         {
-            consume(offset + 1);
-            return std::optional<NodeExpression>(intLit);
+            consume();
+            return std::optional<Term>(intLit);
         }
-
-        // just identifier
-        auto identifier = tryParseExpressionIdentifier(offset);
-        if (identifier.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
+        if(auto ident = parseTermIdentifier())
         {
-            consume(offset + 1);
-            return std::optional<NodeExpression>(identifier);
-        }
-
-        // add operator to the right
-        if (ifType(1, Tokenizer::TokenType::operator_add))
-        {
-            NodeExpression* lhs = nullptr;
-            NodeExpression* rhs = nullptr;
-
-            if(ifType(Tokenizer::TokenType::literal_int))
-            {
-                if(auto intLit = tryParseExpressionIntLit(offset))
-                {
-                    consume(offset + 1);
-                    lhs = new NodeExpression { .variant = intLit.value() };
-                }
-            }
-            else if(ifType(Tokenizer::TokenType::identifier))
-            {
-                if (auto identifier = tryParseExpressionIdentifier())
-                {
-                    consume(offset + 1);
-                    lhs = new NodeExpression { .variant = identifier.value() };
-                }
-            }
-            consume(offset + 1);
-
-            auto rhExpr = parseExpression();
-            if(rhExpr.has_value())
-            {
-                rhs = new NodeExpression { .variant = rhExpr.value().variant };
-            }
-
-            if(lhs == nullptr || rhs == nullptr)
-            {
-                return std::nullopt;
-            }
-
-            return NodeExpression { .variant = NodeExpressionAdd { .lhs = lhs, .rhs = rhs }};
+            consume();
+            return std::optional<Term>(ident);
         }
 
         return std::nullopt;
     }
 
-    std::optional<NodeExpressionIntLit> Parser::tryParseExpressionIntLit(int offset)
+    std::optional<NodeExpression> Parser::parseExpression(const int minPrecedence)
+    {
+        std::optional<Term> lhs = parseTerm();
+        if (!lhs.has_value())
+            return std::nullopt;
+        while(true)
+        {
+            std::optional<Tokenizer::Token> curToken = peek();
+            if(!curToken.has_value() ||
+                !Tokenizer::Token::isBinOperator(curToken.value().type) ||
+                !Tokenizer::Token::binPrecedence(curToken.value().type).value() < minPrecedence)
+            {
+                break;
+            }
+
+            Tokenizer::Token op = curToken.value();
+            auto prec = Tokenizer::Token::binPrecedence(curToken.value().type);
+            if (!prec.has_value())
+                return std::nullopt;
+            int nextPrec = prec.value() + 1;
+
+            consume();
+            auto rhs = parseExpression(nextPrec);
+
+            switch (op.type)
+            {
+            case Tokenizer::bin_operator_add:
+                return NodeExpression {
+                    .variant = NodeExpressionAdd {
+                        .lhs = new NodeExpression {
+                            .variant = lhs.value()
+                        },
+                        .rhs = new NodeExpression {
+                            .variant = rhs.value().variant
+                        }
+                    }
+                };
+            case Tokenizer::bin_operator_mult:
+                return NodeExpression {
+                    .variant = NodeExpressionMult {
+                        .lhs = new NodeExpression {
+                            .variant = lhs.value()
+                        },
+                        .rhs = new NodeExpression {
+                            .variant = rhs.value().variant
+                        }
+                    }
+                };
+            default:
+                return std::nullopt;
+            }
+        }
+
+
+        // end of bin expr
+        // consume();
+        return NodeExpression {.variant = lhs.value()};
+
+        // if (std::optional<Term> lhs = parseTerm(); !lhs.has_value())
+        //     return std::nullopt;
+        //
+        // std::optional<NodeExpression> rhs;
+        //
+        // while (peek().has_value() && Tokenizer::Token::isBinOperator(peek().value().type))
+        // {
+        //     Tokenizer::Token op = peek().value();
+        //     if (Tokenizer::Token::binPrecedence(op.type).value() > minPrecedence)
+        //     {
+        //
+        //     }
+        //     else
+        //     {
+        //         break;
+        //     }
+        // }
+    }
+
+    std::optional<TermIntLit> Parser::parseTermIntLit(int offset)
     {
         if (ifType(offset, Tokenizer::TokenType::literal_int))
         {
-            auto expr = NodeExpressionIntLit {.value = peek(offset).value().value.value()};
+            auto expr = TermIntLit {.value = peek(offset).value().value.value()};
 
             return expr;
         }
@@ -140,11 +174,11 @@ namespace Radium::Parser
         return std::nullopt;
     }
 
-    std::optional<NodeExpressionIdentifier> Parser::tryParseExpressionIdentifier(int offset)
+    std::optional<TermIdentifier> Parser::parseTermIdentifier(int offset)
     {
-        if(ifType(offset, Tokenizer::TokenType::identifier) && !ifType(Tokenizer::TokenType::operator_add))
+        if(ifType(offset, Tokenizer::TokenType::identifier) && !ifType(Tokenizer::TokenType::bin_operator_add))
         {
-            auto expr = NodeExpressionIdentifier {.value = peek(offset).value().value.value()};
+            auto expr = TermIdentifier {.value = peek(offset).value().value.value()};
 
             return expr;
         }

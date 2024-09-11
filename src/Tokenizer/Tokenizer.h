@@ -13,7 +13,6 @@ namespace Radium::Tokenizer
         explicit Tokenizer(std::string  source);
 
         std::vector<Token> tokenize();
-
     private:
         std::optional<char> peek(int offset = 0);
         std::optional<char> consume();
