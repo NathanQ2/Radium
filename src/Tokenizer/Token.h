@@ -6,7 +6,7 @@
 
 #include "TokenType.h"
 
-namespace Radium::Tokenizer
+namespace Radium
 {
     struct Token {
         TokenType type;

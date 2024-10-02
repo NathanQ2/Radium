@@ -5,7 +5,7 @@
 #include <sstream>
 #include <variant>
 
-namespace Radium::Parser::Nodes
+namespace Radium
 {
     struct NodeExpressionIntLit
     {

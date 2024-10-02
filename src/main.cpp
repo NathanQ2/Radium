@@ -30,13 +30,13 @@ int main(int argc, char* argv[])
         ifs.close();
     }
 
-    Tokenizer::Tokenizer tokenizer(source);
-    std::vector<Tokenizer::Token> tokens = tokenizer.tokenize();
+    Tokenizer tokenizer(source);
+    std::vector<Token> tokens = tokenizer.tokenize();
 
-    Parser::Parser parser(tokens);
+    Parser parser(tokens);
     NodeRoot root = parser.parse();
 
-    Generator::Generator generator(root);
+    Generator generator(root);
     std::string output = generator.generate();
     RA_TRACE("Compilation result:\n{0}", output);
 

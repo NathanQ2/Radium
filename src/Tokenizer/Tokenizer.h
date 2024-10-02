@@ -5,7 +5,7 @@
 
 #include "Token.h"
 
-namespace Radium::Tokenizer
+namespace Radium
 {
     class Tokenizer
     {
@@ -17,6 +17,8 @@ namespace Radium::Tokenizer
     private:
         std::optional<char> peek(int offset = 0);
         std::optional<char> consume();
+
+        bool peekIs(char a, int offset = 1);
 
         std::string m_source;
         size_t m_index;

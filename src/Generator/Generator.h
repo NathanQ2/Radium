@@ -5,9 +5,9 @@
 
 #include "../Parser/Nodes/Nodes.h"
 
-using namespace Radium::Parser::Nodes;
+using namespace Radium;
 
-namespace Radium::Generator
+namespace Radium
 {
     class Generator {
     public:

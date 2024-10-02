@@ -6,7 +6,7 @@
 #include "../Logger/Logger.h"
 
 
-namespace Radium::Generator
+namespace Radium
 {
     Generator::Generator(NodeRoot nodeRoot)
         : m_nodeRoot(std::move(nodeRoot)),

@@ -4,9 +4,9 @@
 
 #include "../Logger/Logger.h"
 
-namespace Radium::Parser
+namespace Radium
 {
-    Parser::Parser(std::vector<Tokenizer::Token> tokens)
+    Parser::Parser(std::vector<Token> tokens)
         : m_tokens(std::move(tokens)),
         m_index(0)
     {
@@ -17,7 +17,7 @@ namespace Radium::Parser
         std::vector<NodeStatement> statements;
         while(peek().has_value())
         {
-            if(peek().value().type == Tokenizer::TokenType::builtin_exit)
+            if(peek().value().type == TokenType::builtin_exit)
             {
                 if (auto exitStatement = parseExit())
                 {
@@ -31,7 +31,7 @@ namespace Radium::Parser
 
                 break;
             }
-            if(peek().value().type == Tokenizer::TokenType::let)
+            if(peek().value().type == TokenType::let)
             {
                 if(auto letStatement = parseLet())
                 {
@@ -50,7 +50,7 @@ namespace Radium::Parser
         return NodeRoot{.statements = std::move(statements)};
     }
 
-    std::optional<Tokenizer::Token> Parser::peek(int offset)
+    std::optional<Token> Parser::peek(int offset)
     {
         if(m_index + offset >= m_tokens.size())
             return std::nullopt;
@@ -58,13 +58,13 @@ namespace Radium::Parser
         return m_tokens.at(m_index + offset);
     }
 
-    std::optional<Tokenizer::Token> Parser::consume(int offset)
+    std::optional<Token> Parser::consume(int offset)
     {
         m_index += offset;
         return m_tokens.at(m_index);
     }
 
-    bool Parser::ifType(int offset, Tokenizer::TokenType type)
+    bool Parser::ifType(int offset, TokenType type)
     {
         return peek(offset).has_value() && peek(offset).value().type == type;
     }
@@ -73,7 +73,7 @@ namespace Radium::Parser
     {
         // just int lit
         auto intLit = tryParseExpressionIntLit(offset);
-        if (intLit.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
+        if (intLit.has_value() && !ifType(1, TokenType::operator_add))
         {
             consume(offset + 1);
             return std::optional<NodeExpression>(intLit);
@@ -81,19 +81,19 @@ namespace Radium::Parser
 
         // just identifier
         auto identifier = tryParseExpressionIdentifier(offset);
-        if (identifier.has_value() && !ifType(1, Tokenizer::TokenType::operator_add))
+        if (identifier.has_value() && !ifType(1, TokenType::operator_add))
         {
             consume(offset + 1);
             return std::optional<NodeExpression>(identifier);
         }
 
         // add operator to the right
-        if (ifType(1, Tokenizer::TokenType::operator_add))
+        if (ifType(1, TokenType::operator_add))
         {
             NodeExpression* lhs = nullptr;
             NodeExpression* rhs = nullptr;
 
-            if(ifType(Tokenizer::TokenType::literal_int))
+            if(ifType(TokenType::literal_int))
             {
                 if(auto intLit = tryParseExpressionIntLit(offset))
                 {
@@ -101,7 +101,7 @@ namespace Radium::Parser
                     lhs = new NodeExpression { .variant = intLit.value() };
                 }
             }
-            else if(ifType(Tokenizer::TokenType::identifier))
+            else if(ifType(TokenType::identifier))
             {
                 if (auto identifier = tryParseExpressionIdentifier())
                 {
@@ -130,7 +130,7 @@ namespace Radium::Parser
 
     std::optional<NodeExpressionIntLit> Parser::tryParseExpressionIntLit(int offset)
     {
-        if (ifType(offset, Tokenizer::TokenType::literal_int))
+        if (ifType(offset, TokenType::literal_int))
         {
             auto expr = NodeExpressionIntLit {.value = peek(offset).value().value.value()};
 
@@ -142,7 +142,7 @@ namespace Radium::Parser
 
     std::optional<NodeExpressionIdentifier> Parser::tryParseExpressionIdentifier(int offset)
     {
-        if(ifType(offset, Tokenizer::TokenType::identifier) && !ifType(Tokenizer::TokenType::operator_add))
+        if(ifType(offset, TokenType::identifier) && !ifType(TokenType::operator_add))
         {
             auto expr = NodeExpressionIdentifier {.value = peek(offset).value().value.value()};
 
@@ -155,12 +155,12 @@ namespace Radium::Parser
     std::optional<NodeStatementExit> Parser::parseExit()
     {
         // Expects current token to be of type builtin_exit
-        if (!peek().has_value() || peek().value().type != Tokenizer::TokenType::builtin_exit)
+        if (!peek().has_value() || peek().value().type != TokenType::builtin_exit)
             return std::nullopt;
 
         // Expect next token to be of type parenthesis_open
         consume();
-        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::parenthesis_open)
+        if(!peek().has_value() || peek().value().type != TokenType::parenthesis_open)
             return std::nullopt;
 
         // Expect next token to be of type expression
@@ -170,11 +170,11 @@ namespace Radium::Parser
         if(!expression.has_value())
             return std::nullopt;
 
-        if(!peek().has_value() || peek().value().type !=Tokenizer::TokenType::parenthesis_close)
+        if(!peek().has_value() || peek().value().type != TokenType::parenthesis_close)
             return std::nullopt;
 
         consume();
-        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::semicolon)
+        if(!peek().has_value() || peek().value().type != TokenType::semicolon)
             return std::nullopt;
 
         return NodeStatementExit {.expression = expression.value()};
@@ -182,17 +182,17 @@ namespace Radium::Parser
 
     std::optional<NodeStatementLet> Parser::parseLet()
     {
-        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::let)
+        if(!peek().has_value() || peek().value().type != TokenType::let)
             return std::nullopt;
 
         consume();
-        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::identifier)
+        if(!peek().has_value() || peek().value().type != TokenType::identifier)
             return std::nullopt;
 
         std::string identifier = peek().value().value.value();
 
         consume();
-        if(!peek().has_value() || peek().value().type != Tokenizer::TokenType::equal_single)
+        if(!peek().has_value() || peek().value().type != TokenType::equal_single)
             return std::nullopt;
 
         consume();
@@ -200,7 +200,7 @@ namespace Radium::Parser
         if(!expression.has_value())
             return std::nullopt;
 
-        if(!peek().has_value() || peek().value().type != Tokenizer::semicolon)
+        if(!peek().has_value() || peek().value().type != semicolon)
             return std::nullopt;
 
         consume();

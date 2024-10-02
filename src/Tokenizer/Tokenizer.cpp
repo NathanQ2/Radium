@@ -1,9 +1,8 @@
 #include "Tokenizer.h"
 
 #include <iostream>
-#include <utility>
 
-namespace Radium::Tokenizer
+namespace Radium
 {
     Tokenizer::Tokenizer(std::string  source)
         : m_source(std::move(source)), m_index(0)
@@ -21,6 +20,7 @@ namespace Radium::Tokenizer
             {
                 consume();
                 buf.clear();
+
                 continue;
             }
 
@@ -51,7 +51,7 @@ namespace Radium::Tokenizer
                 continue;
             }
 
-            if(peek().value() == '=' && (!peek(1).has_value() || peek(1).value() != '='))
+            if(peek().value() == '=' && !peekIs('=', 1))
             {
                 tokens.push_back(Token {.type = equal_single});
                 buf.clear();
@@ -60,7 +60,7 @@ namespace Radium::Tokenizer
                 continue;
             }
 
-            if(peek().value() == '+' && (!peek(1).has_value() || peek(1).value() == ' '))
+            if(peek().value() == '+' && peekIs(' ', 1))
             {
                 tokens.push_back(Token { .type = operator_add });
                 buf.clear();
@@ -80,7 +80,6 @@ namespace Radium::Tokenizer
                 {
                     tokens.push_back(Token {.type = builtin_exit});
                     buf.clear();
-
                 }
                 else if(buf == "let")
                 {
@@ -123,5 +122,10 @@ namespace Radium::Tokenizer
     std::optional<char> Tokenizer::consume()
     {
         return m_source.at(m_index++);
+    }
+
+    bool Tokenizer::peekIs(char a, const int offset)
+    {
+        return peek(offset).has_value() && peek(offset).value() == a;
     }
 }

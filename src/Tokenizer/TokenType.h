@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Radium::Tokenizer
+namespace Radium
 {
     enum TokenType
     {
