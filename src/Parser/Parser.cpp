@@ -17,11 +17,11 @@ namespace Radium
         std::vector<NodeStatement> statements;
         while(peek().has_value())
         {
-            if(peek().value().type == TokenType::builtin_exit)
+            if(peek().value().type == builtin_exit)
             {
                 if (auto exitStatement = parseExit())
                 {
-                    statements.push_back(NodeStatement {.variant = exitStatement.value()});
+                    statements.emplace_back(std::move(exitStatement.value()));
                 }
                 else
                 {
@@ -35,19 +35,17 @@ namespace Radium
             {
                 if(auto letStatement = parseLet())
                 {
-                    statements.push_back(NodeStatement {.variant = letStatement.value()});
+                    statements.emplace_back(std::move(letStatement.value()));
                 }
                 else
                 {
                     RA_ERROR("Failed to parse variable declaration!");
                     exit(EXIT_FAILURE);
                 }
-
-                continue;
             }
         }
 
-        return NodeRoot{.statements = std::move(statements)};
+        return NodeRoot{ .statements = std::move(statements) };
     }
 
     std::optional<Token> Parser::peek(int offset)
@@ -69,90 +67,84 @@ namespace Radium
         return peek(offset).has_value() && peek(offset).value().type == type;
     }
 
-    std::optional<NodeExpression> Parser::parseExpression(int offset)
+    std::optional<std::unique_ptr<NodeExpression>> Parser::parseExpression(int minPrecedence)
     {
-        // just int lit
-        auto intLit = tryParseExpressionIntLit(offset);
-        if (intLit.has_value() && !ifType(1, TokenType::operator_add))
+        std::optional<std::unique_ptr<NodeExpression>> lhs = parseTerm();
+        if (!lhs.has_value()) return std::nullopt;
+
+        while (auto tkn = peek())
         {
-            consume(offset + 1);
-            return std::optional<NodeExpression>(intLit);
-        }
+            std::optional<int> prec = tkn.value().getPrecedence();
+            if (!prec.has_value() || prec.value() < minPrecedence)
+                return lhs;
 
-        // just identifier
-        auto identifier = tryParseExpressionIdentifier(offset);
-        if (identifier.has_value() && !ifType(1, TokenType::operator_add))
-        {
-            consume(offset + 1);
-            return std::optional<NodeExpression>(identifier);
-        }
-
-        // add operator to the right
-        if (ifType(1, TokenType::operator_add))
-        {
-            NodeExpression* lhs = nullptr;
-            NodeExpression* rhs = nullptr;
-
-            if(ifType(TokenType::literal_int))
+            int nextMinPrec = prec.value();
+            std::optional<BinaryOpAssociativity> associativity = tkn.value().getAssociativity();
+            if (associativity.has_value() && associativity.value() == Left)
             {
-                if(auto intLit = tryParseExpressionIntLit(offset))
-                {
-                    consume(offset + 1);
-                    lhs = new NodeExpression { .variant = intLit.value() };
-                }
-            }
-            else if(ifType(TokenType::identifier))
-            {
-                if (auto identifier = tryParseExpressionIdentifier())
-                {
-                    consume(offset + 1);
-                    lhs = new NodeExpression { .variant = identifier.value() };
-                }
-            }
-            consume(offset + 1);
-
-            auto rhExpr = parseExpression();
-            if(rhExpr.has_value())
-            {
-                rhs = new NodeExpression { .variant = rhExpr.value().variant };
+                nextMinPrec++;
             }
 
-            if(lhs == nullptr || rhs == nullptr)
+            consume();
+            std::optional<std::unique_ptr<NodeExpression>> rhs = parseExpression(nextMinPrec);
+
+            switch (tkn.value().type)
             {
+            case operator_add:
+                return std::make_unique<NodeExpression>(
+                    std::make_unique<NodeExpressionAdd>(
+                        .lhs = std::move(lhs.value()),
+                        .rhs = std::move(rhs.value())
+                    )
+                );
+            default:
                 return std::nullopt;
             }
-
-            return NodeExpression { .variant = NodeExpressionAdd { .lhs = lhs, .rhs = rhs }};
         }
 
         return std::nullopt;
     }
 
-    std::optional<NodeExpressionIntLit> Parser::tryParseExpressionIntLit(int offset)
+    std::optional<std::unique_ptr<NodeExpression>> Parser::parseTerm()
     {
-        if (ifType(offset, TokenType::literal_int))
+        std::optional<std::unique_ptr<NodeExpressionIntLit>> intLit = parseExpressionIntLit();
+        if (intLit.has_value())
         {
-            auto expr = NodeExpressionIntLit {.value = peek(offset).value().value.value()};
+            consume();
+            return std::make_unique<NodeExpression>(std::move(intLit.value()));
+        }
 
-            return expr;
+        std::optional<std::unique_ptr<NodeExpressionIdentifier>> ident = parseExpressionIdentifier();
+        if (ident)
+        {
+            consume();
+            return std::make_unique<NodeExpression>(std::move(ident.value()));
         }
 
         return std::nullopt;
     }
 
-    std::optional<NodeExpressionIdentifier> Parser::tryParseExpressionIdentifier(int offset)
+    std::optional<std::unique_ptr<NodeExpressionIntLit>> Parser::parseExpressionIntLit()
     {
-        if(ifType(offset, TokenType::identifier) && !ifType(TokenType::operator_add))
+        if (ifType(literal_int))
         {
-            auto expr = NodeExpressionIdentifier {.value = peek(offset).value().value.value()};
-
-            return expr;
+            return std::make_unique<NodeExpressionIntLit>(peek().value().value.value());
         }
 
         return std::nullopt;
     }
 
-    std::optional<NodeStatementExit> Parser::parseExit()
+    std::optional<std::unique_ptr<NodeExpressionIdentifier>> Parser::parseExpressionIdentifier()
+    {
+        if(ifType(identifier) && !ifType(operator_add))
+        {
+            return std::make_unique<NodeExpressionIdentifier>(peek().value().value.value());
+        }
+
+        return std::nullopt;
+    }
+
+    std::optional<std::unique_ptr<NodeStatementExit>> Parser::parseExit()
     {
         // Expects current token to be of type builtin_exit
         if (!peek().has_value() || peek().value().type != TokenType::builtin_exit)
@@ -165,7 +157,7 @@ namespace Radium
 
         // Expect next token to be of type expression
         consume();
-        std::optional<NodeExpression> expression = parseExpression();
+        std::optional<std::unique_ptr<NodeExpression>> expression = parseExpression();
 
         if(!expression.has_value())
             return std::nullopt;
@@ -177,33 +169,48 @@ namespace Radium
         if(!peek().has_value() || peek().value().type != TokenType::semicolon)
             return std::nullopt;
 
-        return NodeStatementExit {.expression = expression.value()};
+        return std::make_unique<NodeStatementExit>(expression.value());
     }
 
-    std::optional<NodeStatementLet> Parser::parseLet()
+    std::optional<std::unique_ptr<NodeStatementLet>> Parser::parseLet()
     {
         if(!peek().has_value() || peek().value().type != TokenType::let)
+        {
+            RA_ERROR("Not a 'let' statement! token index: {0}", m_index);
             return std::nullopt;
+        }
 
         consume();
         if(!peek().has_value() || peek().value().type != TokenType::identifier)
+        {
+            RA_ERROR("Not a identifier! token index: {0}", m_index);
             return std::nullopt;
+        }
 
         std::string identifier = peek().value().value.value();
 
         consume();
         if(!peek().has_value() || peek().value().type != TokenType::equal_single)
+        {
+            RA_ERROR("Not a '='! token index: {0}", m_index);
             return std::nullopt;
+        }
 
         consume();
-        std::optional<NodeExpression> expression = parseExpression();
+        std::optional<std::unique_ptr<NodeExpression>> expression = parseExpression();
         if(!expression.has_value())
+        {
+            RA_ERROR("Failed to parse expression! token index: {0}", m_index);
             return std::nullopt;
+        }
 
         if(!peek().has_value() || peek().value().type != semicolon)
+        {
+            RA_ERROR("Not a ';'! token index: {0}", m_index);
             return std::nullopt;
+        }
 
         consume();
-        return NodeStatementLet {.identifier = identifier, .expression = expression.value()};
+        return std::make_unique<NodeStatementLet>(identifier, expression.value());
     }
 }

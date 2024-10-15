@@ -26,7 +26,7 @@ namespace Radium
 
             if (peek().value() == '(')
             {
-                tokens.push_back(Token {.type = parenthesis_open, .value = std::nullopt});
+                tokens.emplace_back(parenthesis_open);
                 buf.clear();
                 consume();
 
@@ -35,7 +35,7 @@ namespace Radium
 
             if(peek().value() == ')')
             {
-                tokens.push_back(Token {.type = parenthesis_close, .value = std::nullopt});
+                tokens.emplace_back(parenthesis_close);
                 buf.clear();
                 consume();
 
@@ -44,7 +44,7 @@ namespace Radium
 
             if(peek().value() == ';')
             {
-                tokens.push_back(Token {.type = semicolon, .value = std::nullopt});
+                tokens.emplace_back(semicolon);
                 buf.clear();
                 consume();
 
@@ -53,7 +53,7 @@ namespace Radium
 
             if(peek().value() == '=' && !peekIs('=', 1))
             {
-                tokens.push_back(Token {.type = equal_single});
+                tokens.emplace_back(equal_single);
                 buf.clear();
                 consume();
 
@@ -62,7 +62,7 @@ namespace Radium
 
             if(peek().value() == '+' && peekIs(' ', 1))
             {
-                tokens.push_back(Token { .type = operator_add });
+                tokens.emplace_back(operator_add);
                 buf.clear();
                 consume();
 
@@ -78,18 +78,18 @@ namespace Radium
 
                 if(buf == "exit")
                 {
-                    tokens.push_back(Token {.type = builtin_exit});
+                    tokens.emplace_back(builtin_exit);
                     buf.clear();
                 }
                 else if(buf == "let")
                 {
-                    tokens.push_back(Token {.type = let});
+                    tokens.emplace_back(let);
                     buf.clear();
 
                 }
                 else // Assume this token is an identifier
                 {
-                    tokens.push_back(Token {.type = identifier, .value = buf});
+                    tokens.emplace_back(identifier, buf);
                     buf.clear();
                 }
             }
@@ -101,7 +101,7 @@ namespace Radium
                     buf.push_back(consume().value());
                 }
 
-                tokens.push_back(Token {.type = literal_int, .value = buf});
+                tokens.emplace_back(literal_int, buf);
                 buf.clear();
 
                 continue;

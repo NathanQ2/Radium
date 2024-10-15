@@ -25,10 +25,11 @@ namespace Radium
         bool ifType(TokenType type) { return ifType(0, type); }
 
 
-        std::optional<NodeExpression> parseExpression(int offset = 0);
-        std::optional<NodeExpressionIntLit> tryParseExpressionIntLit(int offset = 0);
-        std::optional<NodeExpressionIdentifier> tryParseExpressionIdentifier(int offset = 0);
-        std::optional<NodeStatementExit> parseExit();
-        std::optional<NodeStatementLet> parseLet();
+        std::optional<std::unique_ptr<NodeExpression>> parseExpression(int minPrecedence = 0);
+        std::optional<std::unique_ptr<NodeExpression>> parseTerm();
+        [[nodiscard]] std::optional<std::unique_ptr<NodeExpressionIntLit>> parseExpressionIntLit();
+        [[nodiscard]] std::optional<std::unique_ptr<NodeExpressionIdentifier>> parseExpressionIdentifier();
+        [[nodiscard]] std::optional<std::unique_ptr<NodeStatementExit>> parseExit();
+        [[nodiscard]] std::optional<std::unique_ptr<NodeStatementLet>> parseLet();
     };
 }

@@ -21,34 +21,36 @@ namespace Radium
 
     struct NodeExpressionAdd
     {
-        NodeExpression* lhs;
-        NodeExpression* rhs;
+        std::unique_ptr<NodeExpression> lhs;
+        std::unique_ptr<NodeExpression> rhs;
     };
 
     struct NodeExpression
     {
         std::variant<
-            NodeExpressionIntLit,
-            NodeExpressionIdentifier,
-            NodeExpressionAdd
+            std::unique_ptr<NodeExpressionIntLit>,
+            std::unique_ptr<NodeExpressionIdentifier>,
+            std::unique_ptr<NodeExpressionAdd>
         > variant;
     };
 
-
     struct NodeStatementExit
     {
-        NodeExpression expression;
+        std::unique_ptr<NodeExpression> expression;
     };
 
     struct NodeStatementLet
     {
         std::string identifier;
-        NodeExpression expression;
+        std::unique_ptr<NodeExpression> expression;
     };
 
     struct NodeStatement
     {
-        std::variant<NodeStatementLet, NodeStatementExit> variant;
+        std::variant<
+            std::unique_ptr<NodeStatementLet>,
+            std::unique_ptr<NodeStatementExit>
+        > variant;
     };
 
     struct NodeRoot

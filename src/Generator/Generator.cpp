@@ -10,7 +10,6 @@ namespace Radium
 {
     Generator::Generator(NodeRoot nodeRoot)
         : m_nodeRoot(std::move(nodeRoot)),
-          m_sstream(),
           m_stackSizeBytes(0)
     {
         m_registers["rax"] = false;
@@ -27,7 +26,7 @@ namespace Radium
     {
         // boilerplate
         m_sstream << "global _start\n\n_start:\n";
-        for (NodeStatement& statement : m_nodeRoot.statements)
+        for (const NodeStatement& statement : m_nodeRoot.statements)
         {
             generateStatement(statement);
             m_sstream << "\n";
@@ -159,8 +158,8 @@ namespace Radium
     void Generator::generateExpressionAdd(const NodeExpressionAdd &expression, const std::string &destinationRegister,
         const std::string &tempRegister)
     {
-        generateExpression(*expression.lhs, destinationRegister);
-        generateExpression(*expression.rhs, tempRegister);
+        generateExpression(expression.lhs, destinationRegister);
+        generateExpression(expression.rhs, tempRegister);
 
         m_sstream << "    add " << destinationRegister << ", " << tempRegister << "\n";
     }
