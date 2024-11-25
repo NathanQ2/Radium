@@ -32,13 +32,13 @@ namespace Radium
         void popRegister(const std::string& reg);
 
         void generateStatement(const NodeStatement& statement);
-        void generateStatementExit(const NodeStatementExit& statement);
-        void generateStatementLet(const NodeStatementLet& statement);
+        void generateStatementExit(std::unique_ptr<NodeStatementExit> statement);
+        void generateStatementLet(std::unique_ptr<NodeStatementLet> statement);
 
-        void generateExpression(const NodeExpression& expression, const std::string& desinationRegister);
-        void generateExpressionIntLit(const NodeExpressionIntLit& expression, const std::string& destinationRegister);
-        void generateExpressionIdentifier(const NodeExpressionIdentifier& expression, const std::string& destinationRegister);
-        void generateExpressionAdd(const NodeExpressionAdd& expression, const std::string& destinationRegister, const std::string& tempRegister);
+        void generateExpression(std::unique_ptr<NodeExpression> expression, const std::string& desinationRegister);
+        void generateExpressionIntLit(std::unique_ptr<NodeExpressionIntLit> expression, const std::string& destinationRegister);
+        void generateExpressionIdentifier(std::unique_ptr<NodeExpressionIdentifier> expression, const std::string& destinationRegister);
+        void generateExpressionAdd(std::unique_ptr<NodeExpressionAdd> expression, const std::string& destinationRegister, const std::string& tempRegister);
     };
 
 }

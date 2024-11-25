@@ -75,79 +75,81 @@ namespace Radium
     {
         std::visit([this]<typename T>(T&& stmt)
         {
-            if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementExit>)
+            if constexpr (std::is_same_v<std::decay_t<T>, std::unique_ptr<NodeStatementExit>>)
             {
                 generateStatementExit(stmt);
             }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementLet>)
+            else if constexpr (std::is_same_v<std::decay_t<T>, std::unique_ptr<NodeStatementLet>>)
             {
                 generateStatementLet(stmt);
             }
         }, statement.variant);
     }
 
-    void Generator::generateStatementExit(const NodeStatementExit& statement)
+    void Generator::generateStatementExit(const std::unique_ptr<NodeStatementExit> statement)
     {
         m_sstream << "    ; exit\n";
 
-        generateExpression(statement.expression, "rdi");
+        generateExpression(std::move(statement->expression), "rdi");
         mov("rax", "60");
         m_sstream << "    syscall\n";
     }
 
-    void Generator::generateStatementLet(const NodeStatementLet &statement)
+    void Generator::generateStatementLet(std::unique_ptr<NodeStatementLet> statement)
     {
         const std::string reg = pushRegister();
         m_sstream << "    ; let\n";
-        generateExpression(statement.expression, reg);
-        if(m_identifierStackPositions.contains(statement.identifier))
+        std::shared_ptr<NodeExpression> expr = std::make_shared<NodeExpression>(std::move(statement->expression));
+        // is moving the right operation here?
+        generateExpression(std::move(statement->expression), reg);
+        if(m_identifierStackPositions.contains(statement->identifier))
         {
-            RA_ERROR("Identifier '{0}' has already been declared!", statement.identifier);
+            RA_ERROR("Identifier '{0}' has already been declared!", statement->identifier);
 
             exit(EXIT_FAILURE);
         }
         push(reg, 8);
         popRegister(reg);
-        m_identifierStackPositions[statement.identifier] = m_stackSizeBytes;
+        m_identifierStackPositions[statement->identifier] = m_stackSizeBytes;
     }
 
-    void Generator::generateExpression(const NodeExpression &expression, const std::string &desinationRegister)
+    void Generator::generateExpression(std::unique_ptr<NodeExpression> expression, const std::string &desinationRegister)
     {
         std::visit([this, desinationRegister]<typename T>(T&& expr)
         {
-            if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIntLit>)
+            if constexpr (std::is_same_v<std::decay_t<T>, std::unique_ptr<NodeExpressionIntLit>>)
             {
                 generateExpressionIntLit(expr, desinationRegister);
             }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIdentifier>)
+            else if constexpr (std::is_same_v<std::decay_t<T>, std::unique_ptr<NodeExpressionIdentifier>>)
             {
                 generateExpressionIdentifier(expr, desinationRegister);
             }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionAdd>)
+            else if constexpr (std::is_same_v<std::decay_t<T>, std::unique_ptr<NodeExpressionAdd>>)
             {
                 const std::string reg = pushRegister();
                 generateExpressionAdd(expr, desinationRegister, reg);
                 popRegister(reg);
             }
-        }, expression.variant);
+        }, expression->variant);
     }
 
-    void Generator::generateExpressionIntLit(const NodeExpressionIntLit &expression,
+    void Generator::generateExpressionIntLit(std::unique_ptr<NodeExpressionIntLit> expression,
         const std::string &destinationRegister)
     {
-        mov(destinationRegister, expression.value);
+        mov(destinationRegister, expression->value);
     }
 
-    void Generator::generateExpressionIdentifier(const NodeExpressionIdentifier &expression,
+    void Generator::generateExpressionIdentifier(std::unique_ptr<NodeExpressionIdentifier> expression,
         const std::string &destinationRegister)
     {
-        if (!m_identifierStackPositions.contains(expression.value))
+        if (!m_identifierStackPositions.contains(expression->value))
         {
             RA_ERROR("Identifier '{0}' has not been declared!");
 
             exit(EXIT_FAILURE);
         }
-        const size_t offset = m_identifierStackPositions[expression.value];
+        const size_t offset = m_identifierStackPositions[expression->value];
         // Copy value onto top of the stack
         std::stringstream ss;
         ss << "QWORD [rsp+" << (m_stackSizeBytes - offset) << "]";
@@ -155,11 +157,11 @@ namespace Radium
         pop(destinationRegister, 8);
     }
 
-    void Generator::generateExpressionAdd(const NodeExpressionAdd &expression, const std::string &destinationRegister,
+    void Generator::generateExpressionAdd(std::unique_ptr<NodeExpressionAdd> expression, const std::string &destinationRegister,
         const std::string &tempRegister)
     {
-        generateExpression(expression.lhs, destinationRegister);
-        generateExpression(expression.rhs, tempRegister);
+        generateExpression(std::move(expression->lhs), destinationRegister);
+        generateExpression(std::move(expression->rhs), tempRegister);
 
         m_sstream << "    add " << destinationRegister << ", " << tempRegister << "\n";
     }
