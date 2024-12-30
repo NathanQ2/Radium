@@ -31,6 +31,8 @@ namespace Radium
         std::string reserveRegister();
         void freeRegister(const std::string& reg);
 
+        void generateFunction(const NodeFunction& function);
+        
         void generateStatement(const NodeStatement& statement);
         void generateStatementExit(NodeStatementExit* statement);
         void generateStatementLet(NodeStatementLet* statement);

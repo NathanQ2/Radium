@@ -25,11 +25,11 @@ namespace Radium
     std::string Generator::generate()
     {
         // boilerplate
-        m_ss << "global _start\n\n_start:\n";
-        for (const NodeStatement& statement : m_nodeRoot.statements)
+        m_ss << "global _start\n\n_start:\n    call main\n";
+
+        for (const NodeFunction* function : m_nodeRoot.functions)
         {
-            generateStatement(statement);
-            m_ss << "\n";
+            generateFunction(*function);
         }
 
         return m_ss.str();
@@ -69,6 +69,16 @@ namespace Radium
     void Generator::freeRegister(const std::string& reg)
     {
         m_registers[reg] = false;
+    }
+    
+    void Generator::generateFunction(const NodeFunction& function)
+    {
+        m_ss << function.identifier << ":\n";
+        for (const NodeStatement& statement : function.statements)
+        {
+            generateStatement(statement);
+            m_ss << "\n";
+        }
     }
 
     void Generator::generateStatement(const NodeStatement& statement)

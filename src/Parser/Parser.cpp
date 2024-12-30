@@ -1,5 +1,6 @@
 #include "Parser.h"
 
+#include <codecvt>
 #include <iostream>
 
 #include "../Logger/Logger.h"
@@ -11,10 +12,55 @@ namespace Radium
 
     NodeRoot Parser::parse()
     {
+        std::vector<NodeFunction*> functions;
+        while (m_reader.peek().has_value())
+        {
+            if (const auto func = parseFunction())
+            {
+                functions.emplace_back(func.value());
+            }
+            
+            // m_reader.consume();
+        }
+
+        return NodeRoot { .functions = std::move(functions) };
+    }
+
+    std::optional<NodeFunction*> Parser::parseFunction()
+    {
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == func; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == identifier; }))
+            return std::nullopt;
+        std::string ident = m_reader.consume().value.value();
+
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == parenthesis_open; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == parenthesis_close; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == curly_open; }))
+            return std::nullopt;
+        m_reader.consume();
+        
         std::vector<NodeStatement> statements;
         std::vector<Token> stmnt = std::vector<Token>();
+        int curlyDelta = 1;
         while(m_reader.peek().has_value())
         {
+            if (m_reader.peekAnd([](const Token& tkn) { return tkn.type == curly_open; }))
+                curlyDelta++;
+            if (m_reader.peekAnd([](const Token& tkn) { return tkn.type == curly_close; }))
+                curlyDelta--;
+
+            if (curlyDelta == 0)
+                break;
+            
             std::optional<NodeStatement> statement = parseStatement();
             if (!statement.has_value())
             {
@@ -27,7 +73,11 @@ namespace Radium
             statements.push_back(statement.value());
         }
 
-        return NodeRoot{ .statements = std::move(statements) };
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == curly_close; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        return new NodeFunction{ .statements = std::move(statements), .identifier = ident };
     }
 
     std::optional<NodeExpression*> Parser::parseExpression(int minPrecedence)

@@ -18,6 +18,7 @@ namespace Radium
     private:
         Reader<Token> m_reader;
 
+        [[nodiscard]] std::optional<NodeFunction*> parseFunction();
         [[nodiscard]] std::optional<NodeExpression*> parseExpression(int minPrecedence = 1);
         [[nodiscard]] std::optional<NodeExpression*> parseAtom();
         [[nodiscard]] std::optional<NodeExpressionIntLit*> parseExpressionIntLit();

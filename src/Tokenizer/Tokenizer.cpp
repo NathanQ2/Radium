@@ -43,6 +43,24 @@ namespace Radium
                 continue;
             }
 
+            if (m_reader.peek().value() == '{')
+            {
+                tokens.emplace_back(curly_open);
+                buf.clear();
+                m_reader.consume();
+
+                continue;
+            }
+            
+            if (m_reader.peek().value() == '}')
+            {
+                tokens.emplace_back(curly_close);
+                buf.clear();
+                m_reader.consume();
+
+                continue;
+            }
+
             if(m_reader.peek().value() == ';')
             {
                 tokens.emplace_back(semicolon);
@@ -99,6 +117,10 @@ namespace Radium
                     tokens.emplace_back(let);
                     buf.clear();
 
+                }
+                else if (buf == "func")
+                {
+                    tokens.emplace_back(func);
                 }
                 else // Assume this token is an identifier
                 {

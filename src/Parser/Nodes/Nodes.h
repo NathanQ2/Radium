@@ -52,6 +52,8 @@ namespace Radium
         NodeExpression* value;
     };
 
+    struct NodeFunction;
+
     struct NodeStatement
     {
         std::variant<
@@ -60,8 +62,14 @@ namespace Radium
         > variant;
     };
 
-    struct NodeRoot
+    struct NodeFunction
     {
         std::vector<NodeStatement> statements;
+        std::string identifier;
+    };
+
+    struct NodeRoot
+    {
+        std::vector<NodeFunction*> functions;
     };
 }

@@ -1,7 +1,7 @@
-// func main() {
-let x = 10 + 5;
-let y = 15;
-let z = 20;
+func main() {
+    let x = 10 + 5;
+    let y = 15;
+    let z = 20;
 
-exit(x + y + z);
-// }
+    exit(x + y + z);
+}
