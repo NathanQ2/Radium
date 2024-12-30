@@ -176,8 +176,8 @@ namespace Radium
     void Generator::generateExpressionAdd(NodeExpressionAdd* expression, const std::string &destinationRegister,
         const std::string &tempRegister)
     {
-        generateExpression(std::move(expression->lhs), destinationRegister);
-        generateExpression(std::move(expression->rhs), tempRegister);
+        generateExpression(expression->lhs, destinationRegister);
+        generateExpression(expression->rhs, tempRegister);
 
         m_ss << "    add " << destinationRegister << ", " << tempRegister << "\n";
     }
