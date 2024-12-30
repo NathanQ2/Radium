@@ -71,7 +71,7 @@ namespace Radium
 
             if(std::isalpha(peek().value()))
             {
-                while(std::isalpha(peek().value()))
+                while(std::isalnum(peek().value()))
                 {
                     buf.push_back(consume().value());
                 }

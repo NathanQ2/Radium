@@ -42,15 +42,25 @@ namespace Radium
             }
         }
 
-        [[nodiscard]] static std::optional<BinaryOpAssociativity> getAssociativity(const TokenType& tkn)
+        [[nodiscard]] static std::optional<BinaryOpAssociativity> getAssociativity(const TokenType& type)
         {
-            switch(tkn)
+            switch(type)
             {
             case operator_add:
                 return Left;
             default:
                 return std::nullopt;
             }
+        }
+
+        [[nodiscard]] static bool isBinOp(const TokenType& type)
+        {
+            return getPrecedence(type).has_value();
+        }
+
+        [[nodiscard]] static bool isAtom(const TokenType& type)
+        {
+            return type == literal_int || type == identifier;
         }
 
         [[nodiscard]] std::optional<int> getPrecedence() const
@@ -61,6 +71,16 @@ namespace Radium
         [[nodiscard]] std::optional<BinaryOpAssociativity> getAssociativity() const
         {
             return getAssociativity(this->type);
+        }
+
+        [[nodiscard]] bool isBinOp() const
+        {
+            return isBinOp(this->type);
+        }
+
+        [[nodiscard]] bool isAtom() const
+        {
+            return isAtom(this->type);
         }
     };
 }

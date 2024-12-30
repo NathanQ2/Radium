@@ -1,3 +1,5 @@
-let x = 5 + 5;
+let x = 10 + 5;
+let y = 15;
+let z = 10;
 
-exit(x);
+exit(5 + x + y + 5 + z);

@@ -7,6 +7,7 @@ find_package(spdlog REQUIRED)
 
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.h)
 
-add_executable(Radium ${SOURCES})
+add_executable(Radium ${SOURCES}
+        src/Reader.h)
 
 target_link_libraries(Radium PRIVATE spdlog::spdlog)
