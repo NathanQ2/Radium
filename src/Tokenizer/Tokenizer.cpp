@@ -1,11 +1,12 @@
 #include "Tokenizer.h"
 
 #include <iostream>
+#include <utility>
 
 namespace Radium
 {
-    Tokenizer::Tokenizer(std::string  source)
-        : m_source(std::move(source)), m_index(0)
+    Tokenizer::Tokenizer(std::string source)
+        : m_reader(std::vector(source.begin(), source.end())), m_source(std::move(source))
     {
     }
 
@@ -14,66 +15,78 @@ namespace Radium
         std::vector<Token> tokens = std::vector<Token>();
 
         std::string buf;
-        while(peek().has_value())
+        while(m_reader.peek().has_value())
         {
-            if(std::isspace(peek().value()))
+            if(std::isspace(m_reader.peek().value()))
             {
-                consume();
+                m_reader.consume();
                 buf.clear();
 
                 continue;
             }
 
-            if (peek().value() == '(')
+            if (m_reader.peek().value() == '(')
             {
                 tokens.emplace_back(parenthesis_open);
                 buf.clear();
-                consume();
+                m_reader.consume();
 
                 continue;
             }
 
-            if(peek().value() == ')')
+            if(m_reader.peek().value() == ')')
             {
                 tokens.emplace_back(parenthesis_close);
                 buf.clear();
-                consume();
+                m_reader.consume();
 
                 continue;
             }
 
-            if(peek().value() == ';')
+            if(m_reader.peek().value() == ';')
             {
                 tokens.emplace_back(semicolon);
                 buf.clear();
-                consume();
+                m_reader.consume();
 
                 continue;
             }
 
-            if(peek().value() == '=' && !peekIs('=', 1))
+            if(m_reader.peek().value() == '=' && !m_reader.peekAnd([](const char& c) { return c == '='; }, 1))
             {
                 tokens.emplace_back(equal_single);
                 buf.clear();
-                consume();
+                m_reader.consume();
 
                 continue;
             }
 
-            if(peek().value() == '+' && peekIs(' ', 1))
+            if(m_reader.peek().value() == '+')
             {
                 tokens.emplace_back(operator_add);
                 buf.clear();
-                consume();
+                m_reader.consume();
 
                 continue;
             }
 
-            if(std::isalpha(peek().value()))
+            if (m_reader.peekAnd([](const char& c) { return c == '/'; }) && m_reader.peekAnd([](const char& c) { return c == '/'; }, 1))
             {
-                while(std::isalnum(peek().value()))
+                while (m_reader.peek().has_value() && m_reader.peek().value() != '\n')
                 {
-                    buf.push_back(consume().value());
+                    m_reader.consume();
+                }
+                m_reader.consume();
+                buf.clear();
+
+                continue;
+            }
+
+            if(std::isalpha(m_reader.peek().value()))
+            {
+                while(std::isalnum(m_reader.peek().value()))
+                {
+                    buf.push_back(m_reader.consume());
                 }
 
                 if(buf == "exit")
@@ -94,11 +107,11 @@ namespace Radium
                 }
             }
 
-            if(std::isdigit(peek().value()))
+            if(std::isdigit(m_reader.peek().value()))
             {
-                while(std::isdigit(peek().value()))
+                while(std::isdigit(m_reader.peek().value()))
                 {
-                    buf.push_back(consume().value());
+                    buf.push_back(m_reader.consume());
                 }
 
                 tokens.emplace_back(literal_int, buf);
@@ -109,23 +122,5 @@ namespace Radium
         }
 
         return tokens;
-    }
-
-    std::optional<char> Tokenizer::peek(const int offset)
-    {
-        if (m_index + offset >= m_source.length())
-            return  std::nullopt;
-
-        return m_source.at(m_index + offset);
-    }
-
-    std::optional<char> Tokenizer::consume()
-    {
-        return m_source.at(m_index++);
-    }
-
-    bool Tokenizer::peekIs(char a, const int offset)
-    {
-        return peek(offset).has_value() && peek(offset).value() == a;
     }
 }

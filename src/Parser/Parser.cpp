@@ -54,7 +54,8 @@ namespace Radium
                 BinaryOpAssociativity assoc = binOp.getAssociativity().value();
                 int nextMinPrecedence = assoc == Left ? precedence + 1 : precedence;
 
-                m_reader.consumeUntil([](const auto& tkn) { return tkn.isBinOp(); });
+                // m_reader.consumeUntil([](const auto& tkn) { return !tkn.isBinOp(); });
+                m_reader.consume();
                 NodeExpression* rhs = nullptr;
                 if (auto r = parseExpression(nextMinPrecedence))
                 {
@@ -97,7 +98,7 @@ namespace Radium
 
         if (m_reader.peekAnd([](const auto& tkn) { return tkn.type == parenthesis_open; }))
         {
-            m_reader.consumeUntil([](const auto& tkn) { return tkn.isAtom(); });
+            // m_reader.consumeUntil([](const auto& tkn) { return tkn.isAtom(); });
             if (auto expr = parseExpression())
             {
                 if (!m_reader.peekAnd([](const auto& tkn) { return tkn.type == parenthesis_close; }))

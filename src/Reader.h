@@ -45,7 +45,7 @@ public:
     int consumeUntil(std::function<bool(const T&)> condition)
     {
         int amt = 0;
-        while (peekAnd(condition))
+        while (!peekAnd(condition))
         {
             amt++;
             consume();

@@ -12,6 +12,9 @@ namespace Radium
         semicolon,
         literal_int,
         builtin_exit,
-        operator_add
+        operator_add,
+        func,
+        curly_open,
+        curly_close
     };
 }
