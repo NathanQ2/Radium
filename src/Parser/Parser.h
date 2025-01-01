@@ -26,5 +26,7 @@ namespace Radium
         [[nodiscard]] std::optional<NodeStatement> parseStatement();
         [[nodiscard]] std::optional<NodeStatementExit*> parseExit();
         [[nodiscard]] std::optional<NodeStatementLet*> parseLet();
+        [[nodiscard]] std::optional<NodeStatementFunctionCall*> parseFunctionCall();
+        [[nodiscard]] std::optional<NodeStatementRet*> parseRet();
     };
 }

@@ -74,10 +74,24 @@ namespace Radium
     void Generator::generateFunction(const NodeFunction& function)
     {
         m_ss << function.identifier << ":\n";
+        bool hasReturn = false;
         for (const NodeStatement& statement : function.statements)
         {
             generateStatement(statement);
             m_ss << "\n";
+
+            // this is probably bad
+            if (statement.variant.index() == 3)
+            {
+                hasReturn = true;
+            }
+        }
+
+        if (!hasReturn)
+        {
+            RA_ERROR("Function '{0}' does not return!", function.identifier);
+
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -92,6 +106,14 @@ namespace Radium
             else if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementLet*>)
             {
                 generateStatementLet(stmt);
+            }
+            else if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementFunctionCall*>)
+            {
+                generateStatementFunctionCall(stmt);
+            }
+            else if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementRet*>)
+            {
+                generateStatementRet(stmt);
             }
         }, statement.variant);
     }
@@ -125,6 +147,18 @@ namespace Radium
         push(reg, 8);
         freeRegister(reg);
         m_identifierStackPositions[statement->identifier] = m_stackSizeBytes;
+    }
+
+    void Generator::generateStatementFunctionCall(const NodeStatementFunctionCall* statement)
+    {
+        m_ss << "    ; call " << statement->identifier << "\n";
+        m_ss << "    call " << statement->identifier << "\n";
+    }
+
+    void Generator::generateStatementRet(const NodeStatementRet* statement)
+    {
+        generateExpression(statement->value, "rax");
+        m_ss << "    ret\n";
     }
 
     void Generator::generateExpression(NodeExpression* expression, const std::string &destinationRegister)

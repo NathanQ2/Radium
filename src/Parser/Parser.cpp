@@ -19,8 +19,6 @@ namespace Radium
             {
                 functions.emplace_back(func.value());
             }
-            
-            // m_reader.consume();
         }
 
         return NodeRoot { .functions = std::move(functions) };
@@ -246,6 +244,54 @@ namespace Radium
         return std::nullopt;
     }
 
+    std::optional<NodeStatementFunctionCall*> Parser::parseFunctionCall()
+    {
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == identifier; }))
+            return std::nullopt;
+        std::string ident = m_reader.consume().value.value();
+        
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == parenthesis_open; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == parenthesis_close; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == semicolon; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        return new NodeStatementFunctionCall {
+            .identifier = ident
+        };
+    }
+
+    std::optional<NodeStatementRet*> Parser::parseRet()
+    {
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == ret; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        NodeExpression* expr;
+        if (auto expression = parseExpression())
+        {
+            expr = expression.value();
+        }
+        else
+        {
+            return std::nullopt;
+        }
+
+        if (!m_reader.peekAnd([](const Token& tkn) { return tkn.type == semicolon; }))
+            return std::nullopt;
+        m_reader.consume();
+
+        return new NodeStatementRet {
+            .value = expr
+        };
+    }
+
 
     std::optional<NodeStatement> Parser::parseStatement()
     {
@@ -266,6 +312,20 @@ namespace Radium
                 m_reader.consume();
                 return NodeStatement {
                     .variant = exit.value()
+                };
+            }
+
+            if (auto functionCall = parseFunctionCall())
+            {
+                return NodeStatement {
+                    .variant = functionCall.value()
+                };
+            }
+
+            if (auto ret = parseRet())
+            {
+                return NodeStatement {
+                    .variant = ret.value()
                 };
             }
         }

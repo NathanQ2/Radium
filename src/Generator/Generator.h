@@ -36,6 +36,8 @@ namespace Radium
         void generateStatement(const NodeStatement& statement);
         void generateStatementExit(NodeStatementExit* statement);
         void generateStatementLet(NodeStatementLet* statement);
+        void generateStatementFunctionCall(const NodeStatementFunctionCall* statement);
+        void generateStatementRet(const NodeStatementRet* statement);
 
         void generateExpression(NodeExpression* expression, const std::string& destinationRegister);
         void generateAtom(const NodeAtom* expression, const std::string& destinationRegister);

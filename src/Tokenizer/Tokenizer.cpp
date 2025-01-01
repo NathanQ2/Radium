@@ -121,6 +121,12 @@ namespace Radium
                 else if (buf == "func")
                 {
                     tokens.emplace_back(func);
+                    buf.clear();
+                }
+                else if (buf == "ret")
+                {
+                    tokens.emplace_back(ret);
+                    buf.clear();
                 }
                 else // Assume this token is an identifier
                 {

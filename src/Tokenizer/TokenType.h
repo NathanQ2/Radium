@@ -14,6 +14,7 @@ namespace Radium
         builtin_exit,
         operator_add,
         func,
+        ret,
         curly_open,
         curly_close
     };

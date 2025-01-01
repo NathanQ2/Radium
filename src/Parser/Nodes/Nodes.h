@@ -52,13 +52,25 @@ namespace Radium
         NodeExpression* value;
     };
 
+    struct NodeStatementFunctionCall
+    {
+        std::string identifier;
+    };
+
+    struct NodeStatementRet
+    {
+        NodeExpression* value;
+    };
+
     struct NodeFunction;
 
     struct NodeStatement
     {
         std::variant<
             NodeStatementLet*,
-            NodeStatementExit*
+            NodeStatementExit*,
+            NodeStatementFunctionCall*,
+            NodeStatementRet*
         > variant;
     };
 
