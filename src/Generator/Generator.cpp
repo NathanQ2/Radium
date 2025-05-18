@@ -25,11 +25,12 @@ namespace Radium
     std::string Generator::generate()
     {
         // boilerplate
-        m_ss << "global _start\n\n_start:\n    call main\n";
+        m_ss << "global _start\n\n";
 
         for (const NodeFunction* function : m_nodeRoot.functions)
         {
-            generateFunction(*function);
+            if (function->identifier == "main") generateFunction(NodeFunction(function->statements, "_start"));
+            else generateFunction(*function);
         }
 
         return m_ss.str();
