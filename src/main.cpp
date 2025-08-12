@@ -30,8 +30,22 @@ int main(int argc, char* argv[])
         ifs.close();
     }
 
-    Tokenizer tokenizer(source);
-    std::vector<Token> tokens = tokenizer.tokenize();
+    TokenizerConfiguration tokenizerConfig = {
+        .tokenizeIntLit = true,
+        .tokenizeIdentifier = true,
+        .punctuators = { '(', ')', '=', ';', '+', '{', '}' },
+        .keywords = { "let", "exit", "func", "ret" },
+    };
+    Tokenizer tokenizer(tokenizerConfig);
+    std::vector<Token> tokens = tokenizer.tokenize(source);
+
+    // std::cout << "Tokens:" << std::endl;
+    // for (const auto& token : tokens) {
+    //     std::cout << "("<< token.type;
+    //     if (token.value.has_value()) std::cout << ", " << token.value.value();
+    //     std::cout << ")";
+    // }
+    // std::cout << std::endl;
 
     Parser parser(tokens);
     NodeRoot root = parser.parse();

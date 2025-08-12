@@ -42,16 +42,16 @@ public:
         return m_buff[m_i++];
     }
 
-    int consumeUntil(std::function<bool(const T&)> condition)
+    std::vector<T> consumeUntil(std::function<bool(const T&)> condition)
     {
-        int amt = 0;
+        std::vector<T> result;
         while (!peekAnd(condition))
         {
-            amt++;
+            result.push_back(peek().value());
             consume();
         }
 
-        return amt;
+        return result;
     }
 
     const std::vector<T>& get()

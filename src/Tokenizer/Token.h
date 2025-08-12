@@ -31,6 +31,22 @@ namespace Radium
         TokenType type;
         std::optional<std::string> value;
 
+        [[nodiscard]] static std::optional<TokenType> getTypeFromString(std::string_view str) {
+            if (str == "(") return parenthesis_open;
+            if (str == ")") return parenthesis_close;
+            if (str == "let") return let;
+            if (str == "=") return equal_single;
+            if (str == ";") return semicolon;
+            if (str == "exit") return builtin_exit;
+            if (str == "+") return operator_add;
+            if (str == "func") return func;
+            if (str == "ret") return ret;
+            if (str == "{") return curly_open;
+            if (str == "}") return curly_close;
+
+            return std::nullopt;
+        }
+
         [[nodiscard]] static std::optional<int> getPrecedence(const TokenType& type)
         {
             switch (type)
