@@ -7,81 +7,106 @@
 
 namespace Radium
 {
-    struct NodeExpressionIntLit
-    {
-        std::string value;
-    };
-
-    struct NodeExpressionIdentifier
-    {
-        std::string value;
-    };
-
     struct NodeExpression;
-
-    struct NodeExpressionAdd
+    
+    struct NodeNumber
     {
-        NodeExpression* lhs;
-        NodeExpression* rhs;
+        std::string value;
+    };
+    
+    struct NodeIdentifier
+    {
+        std::string value;
     };
 
-    struct NodeAtom
+    struct NodeCall
+    {
+        NodeIdentifier* identifier;
+    };
+
+    struct NodePrimary
     {
         std::variant<
-            NodeExpressionIntLit*,
-            NodeExpressionIdentifier*
-        > variant;
+            NodeNumber*,
+            NodeIdentifier*,
+            NodeCall*,
+            NodeExpression*> value;
+    };
+
+    struct NodeMultiplicative
+    {
+        NodePrimary* primary;
+    };
+
+    struct NodeAdditive
+    {
+        NodeMultiplicative* left;
+        NodeMultiplicative* right;
+    };
+
+
+    struct NodeAssignment
+    {
+        std::variant<
+            std::pair<NodeIdentifier*, NodeExpression*>,
+            NodeAdditive*
+        > assignment;
     };
 
     struct NodeExpression
     {
-        std::variant<
-            NodeAtom*,
-            NodeExpressionAdd*
-        > variant;
+        std::variant<NodeAssignment*, NodeAdditive*> expr;
     };
 
-    struct NodeStatementExit
+    struct NodeReturnStatement
     {
-        NodeExpression* exitCode;
+        NodeExpression* expression;
     };
 
-    struct NodeStatementLet
+    struct NodeExpressionStatement
     {
-        std::string identifier;
-        NodeExpression* value;
+        NodeExpression* expression;
     };
 
-    struct NodeStatementFunctionCall
+    struct NodeVarDecl
     {
-        std::string identifier;
+        NodeAssignment* assignment;
     };
 
-    struct NodeStatementRet
+    struct NodeStatement;
+
+    struct NodeBlock
     {
-        NodeExpression* value;
+        std::vector<NodeStatement*> statements;
     };
-
-    struct NodeFunction;
 
     struct NodeStatement
     {
         std::variant<
-            NodeStatementLet*,
-            NodeStatementExit*,
-            NodeStatementFunctionCall*,
-            NodeStatementRet*
-        > variant;
+            NodeVarDecl*,
+            NodeExpressionStatement*,
+            NodeReturnStatement*,
+            NodeBlock*> stmt;
     };
 
-    struct NodeFunction
+    struct NodeParam
     {
-        std::vector<NodeStatement> statements;
-        std::string identifier;
+        std::variant<NodeIdentifier*, NodeNumber*> value;
     };
 
-    struct NodeRoot
+    struct NodeParamList
     {
-        std::vector<NodeFunction*> functions;
+        std::vector<NodeParam*> params;
+    };
+    
+    struct NodeFunctionDecl
+    {
+        NodeIdentifier* identifier;
+        NodeBlock* block;
+    };
+    
+    struct NodeProgram
+    {
+        std::vector<NodeFunctionDecl*> functions;
     };
 }

@@ -8,8 +8,8 @@
 
 namespace Radium
 {
-    Generator::Generator(NodeRoot nodeRoot)
-        : m_nodeRoot(std::move(nodeRoot)),
+    Generator::Generator(NodeProgram program)
+        : m_program(program),
           m_stackSizeBytes(0)
     {
         m_registers["rax"] = false;
@@ -24,13 +24,19 @@ namespace Radium
 
     std::string Generator::generate()
     {
-        // boilerplate
         m_ss << "global _start\n\n";
 
+        /*
         for (const NodeFunction* function : m_nodeRoot.functions)
         {
             if (function->identifier == "main") generateFunction(NodeFunction(function->statements, "_start"));
             else generateFunction(*function);
+        }
+        */
+
+        for (const NodeFunctionDecl* func : m_program.functions)
+        {
+            generateFunction(func);
         }
 
         return m_ss.str();
@@ -71,159 +77,146 @@ namespace Radium
     {
         m_registers[reg] = false;
     }
-    
-    void Generator::generateFunction(const NodeFunction& function)
+
+    void Generator::generateFunction(const NodeFunctionDecl* func)
     {
-        m_ss << function.identifier << ":\n";
-        bool hasReturn = false;
-        for (const NodeStatement& statement : function.statements)
+        std::string funcName = func->identifier->value;
+        if (funcName == "main") funcName = "_start";
+        
+        m_ss << funcName << ":\n";
+        generateBlock(func->block);
+    }
+
+    void Generator::generateBlock(const NodeBlock* block)
+    {
+        for (const NodeStatement* statement : block->statements)
         {
             generateStatement(statement);
-            m_ss << "\n";
-
-            // this is probably bad
-            if (statement.variant.index() == 3)
-            {
-                hasReturn = true;
-            }
-        }
-
-        if (!hasReturn)
-        {
-            RA_ERROR("Function '{0}' does not return!", function.identifier);
-
-            exit(EXIT_FAILURE);
         }
     }
 
-    void Generator::generateStatement(const NodeStatement& statement)
+    void Generator::generateStatement(const NodeStatement* statement)
     {
         std::visit([this]<typename T>(T&& stmt)
         {
-            if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementExit*>)
-            {
-                generateStatementExit(stmt);
-            }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementLet*>)
-            {
-                generateStatementLet(stmt);
-            }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementFunctionCall*>)
-            {
-                generateStatementFunctionCall(stmt);
-            }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeStatementRet*>)
-            {
-                generateStatementRet(stmt);
-            }
-        }, statement.variant);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeVarDecl*>) generateVarDecl(stmt);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionStatement*>) generateExpressionStatement(stmt);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeReturnStatement*>) generateReturnStatement(stmt);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeBlock*>) generateBlock(stmt);
+        }, statement->stmt);
+
+        m_ss << "\n";
     }
 
-    void Generator::generateStatementExit(NodeStatementExit* statement)
+    void Generator::generateVarDecl(const NodeVarDecl* varDecl)
     {
-        m_ss << "    ; exit\n";
-
-        std::string reg = reserveRegister();
-        generateExpression(statement->exitCode, reg);
-        mov("rdi", reg);
-        freeRegister(reg);
-        mov("rax", "60");
-        m_ss << "    syscall\n";
-    }
-
-    void Generator::generateStatementLet(NodeStatementLet* statement)
-    {
-        const std::string reg = reserveRegister();
         m_ss << "    ; let\n";
-        NodeExpression* expr = statement->value;
-        // is moving the right operation here?
-        generateExpression(expr, reg);
-        if(m_identifierStackPositions.contains(statement->identifier))
-        {
-            RA_ERROR("Identifier '{0}' has already been declared!", statement->identifier);
+        const std::string dest = reserveRegister();
+        generateAssignment(varDecl->assignment, dest);
+        push(dest, 8);
+    }
 
-            exit(EXIT_FAILURE);
+    void Generator::generateExpressionStatement(const NodeExpressionStatement* statement)
+    {
+        std::string dest = reserveRegister();
+        generateExpression(statement->expression, dest);
+        freeRegister(dest);
+    }
+
+    void Generator::generateReturnStatement(const NodeReturnStatement* ret)
+    {
+        m_ss << "    ; ret\n";
+        std::string dest = reserveRegister();
+        generateExpression(ret->expression, dest);
+        mov("rax", dest);
+    }
+
+    void Generator::generateExpression(const NodeExpression* expr, const std::string& dest)
+    {
+        std::visit([this, dest]<typename T> (T&& expr)
+        {
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeAssignment*>) generateAssignment(expr, dest);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeAdditive*>) generateAdditive(expr, dest);
+        }, expr->expr);
+    }
+
+    void Generator::generateAssignment(const NodeAssignment* assignment, const std::string& dest)
+    {
+        std::visit([this, dest]<typename T> (T&& expr)
+        {
+            if constexpr (std::is_same_v<std::decay_t<T>, std::pair<NodeIdentifier*, NodeExpression*>>) generateAssignment(expr, dest);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeAdditive*>) generateAdditive(expr, dest);
+        }, assignment->assignment);
+    }
+
+    void Generator::generateAssignment(std::pair<NodeIdentifier*, NodeExpression*> assignment, const std::string& dest)
+    {
+        generateExpression(assignment.second, dest);
+    }
+
+    void Generator::generateAdditive(const NodeAdditive* additive, const std::string& dest)
+    {
+        generateMultiplicative(additive->left, dest);
+        if (additive->right != nullptr)
+        {
+            std::string temp = reserveRegister();
+            generateMultiplicative(additive->right, temp);
+            m_ss << "    add " << dest << ", " << temp << "\n";
+            freeRegister(temp);
         }
-        
-        push(reg, 8);
-        freeRegister(reg);
-        m_identifierStackPositions[statement->identifier] = m_stackSizeBytes;
     }
 
-    void Generator::generateStatementFunctionCall(const NodeStatementFunctionCall* statement)
+    void Generator::generateMultiplicative(const NodeMultiplicative* multi, const std::string& dest)
     {
-        m_ss << "    ; call " << statement->identifier << "\n";
-        m_ss << "    call " << statement->identifier << "\n";
+        generatePrimary(multi->primary, dest);
     }
 
-    void Generator::generateStatementRet(const NodeStatementRet* statement)
+    void Generator::generatePrimary(const NodePrimary* primary, const std::string& dest)
     {
-        generateExpression(statement->value, "rax");
-        m_ss << "    ret\n";
-    }
-
-    void Generator::generateExpression(NodeExpression* expression, const std::string &destinationRegister)
-    {
-        std::visit([this, destinationRegister]<typename T>(T&& expr)
+        std::cout << "dest: " << dest << std::endl;
+        std::cout << "primary: " << primary << "  " << &primary->value << "   " << primary->value.index() << std::endl;
+        std::visit([this, dest]<typename T> (T&& val)
         {
-            if constexpr (std::is_same_v<std::decay_t<T>, NodeAtom*>)
-            {
-                generateAtom(expr, destinationRegister);
-            }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionAdd*>)
-            {
-                const std::string reg = reserveRegister();
-                generateExpressionAdd(expr, destinationRegister, reg);
-                freeRegister(reg);
-            }
-        }, expression->variant);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeNumber*>) generateNumber(val, dest);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeIdentifier*>) generateIdentifier(val, dest);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeCall*>) generateCall(val, dest);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeExpression*>) generateExpression(val, dest);
+        }, primary->value);
     }
 
-    void Generator::generateAtom(const NodeAtom* expression, const std::string& destinationRegister)
+    void Generator::generateNumber(const NodeNumber* number, const std::string& dest)
     {
-        std::visit([this, destinationRegister]<typename T>(T&& expr)
-        {
-            if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIntLit*>)
-            {
-                generateExpressionIntLit(expr, destinationRegister);
-            }
-            else if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionIdentifier*>)
-            {
-                generateExpressionIdentifier(expr, destinationRegister);
-            }
-        }, expression->variant);
+        mov(dest, number->value);
     }
 
-    void Generator::generateExpressionIntLit(const NodeExpressionIntLit* expression,
-                                             const std::string &destinationRegister)
+    void Generator::generateIdentifier(const NodeIdentifier* ident, const std::string& dest)
     {
-        mov(destinationRegister, expression->value);
-    }
-
-    void Generator::generateExpressionIdentifier(const NodeExpressionIdentifier* expression,
-        const std::string &destinationRegister)
-    {
-        if (!m_identifierStackPositions.contains(expression->value))
-        {
-            RA_ERROR("Identifier '{0}' has not been declared!", expression->value);
-
-            exit(EXIT_FAILURE);
-        }
-        
-        const size_t offset = m_identifierStackPositions[expression->value];
-        // Copy value onto top of the stack
+        const size_t offset = m_identifierStackPositions[ident->value];
         std::stringstream ss;
         ss << "QWORD [rsp+" << (m_stackSizeBytes - offset) << "]";
         push(ss.str(), 8);
-        pop(destinationRegister, 8);
+        pop(dest, 8);
     }
 
-    void Generator::generateExpressionAdd(NodeExpressionAdd* expression, const std::string &destinationRegister,
-        const std::string &tempRegister)
+    void Generator::generateCall(const NodeCall* call, const std::string& dest)
     {
-        generateExpression(expression->lhs, destinationRegister);
-        generateExpression(expression->rhs, tempRegister);
+        if (call->identifier->value == "exit")
+        {
+            generateFunctionExitInline();
+        }
+        else
+        {
+            m_ss << "    ; call " << call->identifier->value << "\n";
+            m_ss << "    call " << call->identifier->value << "\n";
+            mov(dest, "rax");
+        }
+    }
 
-        m_ss << "    add " << destinationRegister << ", " << tempRegister << "\n";
+    void Generator::generateFunctionExitInline()
+    {
+        m_ss << "    ; exit\n";
+        mov("rax", "60");
+        mov("rdi", "0");
+        m_ss << "    syscall\n";
     }
 }

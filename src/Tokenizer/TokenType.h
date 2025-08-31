@@ -11,7 +11,6 @@ namespace Radium
         equal_single,
         semicolon,
         literal_int,
-        builtin_exit,
         operator_add,
         func,
         ret,

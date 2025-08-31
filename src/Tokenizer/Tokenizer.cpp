@@ -4,8 +4,7 @@
 #include "../Logger/Logger.h"
 
 namespace Radium {
-    Tokenizer::Tokenizer(const TokenizerConfiguration& config) : m_keywords(config.keywords), m_punctuators(config.punctuators), m_tokenizeIntLit(config.tokenizeIntLit), m_tokenizeIdentifier(config.tokenizeIdentifier) {
-    }
+    Tokenizer::Tokenizer(const TokenizerConfiguration& config) : m_keywords(config.keywords), m_punctuators(config.punctuators), m_tokenizeIntLit(config.tokenizeIntLit), m_tokenizeIdentifier(config.tokenizeIdentifier) {}
 
     std::vector<Token> Tokenizer::tokenize(std::string_view source) {
         std::vector<Token> tokens;

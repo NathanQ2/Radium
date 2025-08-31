@@ -37,7 +37,6 @@ namespace Radium
             if (str == "let") return let;
             if (str == "=") return equal_single;
             if (str == ";") return semicolon;
-            if (str == "exit") return builtin_exit;
             if (str == "+") return operator_add;
             if (str == "func") return func;
             if (str == "ret") return ret;

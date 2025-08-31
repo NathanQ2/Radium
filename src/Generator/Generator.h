@@ -11,11 +11,11 @@ namespace Radium
 {
     class Generator {
     public:
-        explicit Generator(NodeRoot nodeRoot);
+        explicit Generator(NodeProgram program);
 
         std::string generate();
     private:
-        NodeRoot m_nodeRoot;
+        NodeProgram m_program;
 
         std::stringstream m_ss;
 
@@ -31,6 +31,26 @@ namespace Radium
         std::string reserveRegister();
         void freeRegister(const std::string& reg);
 
+        void generateFunction(const NodeFunctionDecl* func);
+        void generateBlock(const NodeBlock* block);
+        void generateStatement(const NodeStatement* statement);
+
+        void generateVarDecl(const NodeVarDecl* varDecl);
+        void generateExpressionStatement(const NodeExpressionStatement* statement);
+        void generateReturnStatement(const NodeReturnStatement* ret);
+
+        void generateExpression(const NodeExpression* expr, const std::string& dest);
+        void generateAssignment(const NodeAssignment* assignment, const std::string& dest);
+        void generateAssignment(std::pair<NodeIdentifier*, NodeExpression*> assignment, const std::string& dest);
+        void generateAdditive(const NodeAdditive* additive, const std::string& dest);
+        void generateMultiplicative(const NodeMultiplicative* multi, const std::string& dest);
+        void generatePrimary(const NodePrimary* primary, const std::string& dest);
+        void generateNumber(const NodeNumber* number, const std::string& dest);
+        void generateIdentifier(const NodeIdentifier* ident, const std::string& dest);
+        void generateCall(const NodeCall* call, const std::string& dest);
+        void generateFunctionExitInline();
+
+        /*
         void generateFunction(const NodeFunction& function);
         
         void generateStatement(const NodeStatement& statement);
@@ -44,6 +64,7 @@ namespace Radium
         void generateExpressionIntLit(const NodeExpressionIntLit* expression, const std::string& destinationRegister);
         void generateExpressionIdentifier(const NodeExpressionIdentifier* expression, const std::string& destinationRegister);
         void generateExpressionAdd(NodeExpressionAdd* expression, const std::string& destinationRegister, const std::string& tempRegister);
+        */
     };
 
 }

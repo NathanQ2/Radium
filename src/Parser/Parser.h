@@ -14,19 +14,25 @@ namespace Radium
     public:
         explicit Parser(const std::vector<Token>& tokens);
 
-        NodeRoot parse();
+        NodeProgram parse();
     private:
         Reader<Token> m_reader;
 
-        [[nodiscard]] std::optional<NodeFunction*> parseFunction();
-        [[nodiscard]] std::optional<NodeExpression*> parseExpression(int minPrecedence = 1);
-        [[nodiscard]] std::optional<NodeExpression*> parseAtom();
-        [[nodiscard]] std::optional<NodeExpressionIntLit*> parseExpressionIntLit();
-        [[nodiscard]] std::optional<NodeExpressionIdentifier*> parseExpressionIdentifier();
-        [[nodiscard]] std::optional<NodeStatement> parseStatement();
-        [[nodiscard]] std::optional<NodeStatementExit*> parseExit();
-        [[nodiscard]] std::optional<NodeStatementLet*> parseLet();
-        [[nodiscard]] std::optional<NodeStatementFunctionCall*> parseFunctionCall();
-        [[nodiscard]] std::optional<NodeStatementRet*> parseRet();
+        [[nodiscard]] NodeFunctionDecl* parseFunctionDecl();
+        [[nodiscard]] NodeBlock* parseBlock();
+        
+        [[nodiscard]] NodeStatement* parseStatement();
+        [[nodiscard]] NodeVarDecl* parseVarDecl();
+        [[nodiscard]] NodeReturnStatement* parseReturn();
+        [[nodiscard]] NodeExpressionStatement* parseExpressionStatement();
+
+        [[nodiscard]] NodeExpression* parseExpression();
+        [[nodiscard]] NodeAssignment* parseAssignment();
+        [[nodiscard]] NodeAdditive* parseAdditive();
+        [[nodiscard]] NodeMultiplicative* parseMultiplicative();
+        [[nodiscard]] NodePrimary* parsePrimary();
+        [[nodiscard]] NodeNumber* parseNumber();
+        [[nodiscard]] NodeIdentifier* parseIdentifier();
+        [[nodiscard]] NodeCall* parseCall();
     };
 }
