@@ -19,9 +19,15 @@ namespace Radium
         std::string value;
     };
 
+    struct NodeArgList
+    {
+        std::vector<NodeExpression*> args;
+    };
+
     struct NodeCall
     {
         NodeIdentifier* identifier;
+        NodeArgList* argList;
     };
 
     struct NodePrimary

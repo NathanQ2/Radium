@@ -34,5 +34,6 @@ namespace Radium
         [[nodiscard]] NodeNumber* parseNumber();
         [[nodiscard]] NodeIdentifier* parseIdentifier();
         [[nodiscard]] NodeCall* parseCall();
+        [[nodiscard]] NodeArgList* parseArgList();
     };
 }

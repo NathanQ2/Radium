@@ -15,18 +15,19 @@ std::string tokenTypeToString(TokenType type)
 {
     switch (type)
     {
-    case parenthesis_open: return "parenthesis_open";
+    case parenthesis_open:  return "parenthesis_open";
     case parenthesis_close: return "parenthesis_close";
-    case let : return "let";
-    case identifier: return "identifier";
-    case equal_single: return "equal_single";
-    case semicolon: return "semicolon";
-    case literal_int: return "literal_int";
-    case operator_add: return "operator_add";
-    case func: return "func";
-    case ret: return "ret";
-    case curly_open: return "curly_open";
-    case curly_close: return "curly_close";
+    case let :              return "let";
+    case identifier:        return "identifier";
+    case equal_single:      return "equal_single";
+    case semicolon:         return "semicolon";
+    case literal_int:       return "literal_int";
+    case operator_add:      return "operator_add";
+    case func:              return "func";
+    case ret:               return "ret";
+    case comma:             return "comma";
+    case curly_open:        return "curly_open";
+    case curly_close:       return "curly_close";
     }
 }
 
@@ -50,13 +51,7 @@ int main(int argc, char* argv[])
         ifs.close();
     }
 
-    TokenizerConfiguration tokenizerConfig = {
-        .tokenizeIntLit = true,
-        .tokenizeIdentifier = true,
-        .punctuators = { '(', ')', '=', ';', '+', '{', '}' },
-        .keywords = { "let", "func", "ret" },
-    };
-    Tokenizer tokenizer(tokenizerConfig);
+    Tokenizer tokenizer = Tokenizer();
     std::vector<Token> tokens = tokenizer.tokenize(source);
 
     std::cout << "Tokens:" << std::endl;

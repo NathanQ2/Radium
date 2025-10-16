@@ -5,10 +5,10 @@ func main() {
     
     let y = myFunc();
     
-    exit();
+    exit(y + 10);
     ret y;
 }
 
 func myFunc() {
-    ret 5 + 15;
+    ret 15 + 15;
 }

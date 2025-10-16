@@ -40,6 +40,7 @@ namespace Radium
             if (str == "+") return operator_add;
             if (str == "func") return func;
             if (str == "ret") return ret;
+            if (str == ",") return comma;
             if (str == "{") return curly_open;
             if (str == "}") return curly_close;
 

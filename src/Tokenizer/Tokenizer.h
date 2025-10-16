@@ -6,28 +6,20 @@
 #include <vector>
 
 namespace Radium {
-    struct TokenizerConfiguration {
-        bool tokenizeIntLit = false;
-        bool tokenizeIdentifier = false;
-
-        std::vector<char> punctuators;
-        std::vector<std::string_view> keywords;
-    };
-    
     class Tokenizer {
     public:
-        explicit Tokenizer(const TokenizerConfiguration& config);
+        explicit Tokenizer();
 
         std::vector<Token> tokenize(std::string_view source);
     private:
-        bool isSpaceOrPunctuator(const char c) {
-            return std::isspace(c) || std::find(m_punctuators.begin(), m_punctuators.end(), c) != m_punctuators.end();
-        };
+        static constexpr std::array<std::string_view, 3> s_keywords = { "let", "func", "ret" };
+        static constexpr std::array<char, 8> s_punctuators = { '(', ')', '=', ';', '+', '{', '}', ',' };
         
-        const std::vector<std::string_view>& m_keywords;
-        const std::vector<char>& m_punctuators;
-
-        bool m_tokenizeIntLit = false;
-        bool m_tokenizeIdentifier = false;
+        static constexpr bool s_tokenizeIntLit = true;
+        static constexpr bool s_tokenizeIdentifier = true;
+        
+        static bool isSpaceOrPunctuator(const char c) {
+            return std::isspace(c) || std::find(s_punctuators.begin(), s_punctuators.end(), c) != s_punctuators.end();
+        };
     };
 }

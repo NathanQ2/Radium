@@ -113,7 +113,6 @@ namespace Radium
         m_ss << "    ; let\n";
         const std::string dest = reserveRegister();
         generateAssignment(varDecl->assignment, dest);
-        push(dest, 8);
     }
 
     void Generator::generateExpressionStatement(const NodeExpressionStatement* statement)
@@ -129,6 +128,7 @@ namespace Radium
         std::string dest = reserveRegister();
         generateExpression(ret->expression, dest);
         mov("rax", dest);
+        m_ss << "    ret\n";
     }
 
     void Generator::generateExpression(const NodeExpression* expr, const std::string& dest)
@@ -152,6 +152,8 @@ namespace Radium
     void Generator::generateAssignment(std::pair<NodeIdentifier*, NodeExpression*> assignment, const std::string& dest)
     {
         generateExpression(assignment.second, dest);
+        push(dest, 8);
+        m_identifierStackPositions[assignment.first->value] = m_stackSizeBytes;
     }
 
     void Generator::generateAdditive(const NodeAdditive* additive, const std::string& dest)
@@ -173,8 +175,6 @@ namespace Radium
 
     void Generator::generatePrimary(const NodePrimary* primary, const std::string& dest)
     {
-        std::cout << "dest: " << dest << std::endl;
-        std::cout << "primary: " << primary << "  " << &primary->value << "   " << primary->value.index() << std::endl;
         std::visit([this, dest]<typename T> (T&& val)
         {
             if constexpr (std::is_same_v<std::decay_t<T>, NodeNumber*>) generateNumber(val, dest);
@@ -202,7 +202,7 @@ namespace Radium
     {
         if (call->identifier->value == "exit")
         {
-            generateFunctionExitInline();
+            generateFunctionExitInline(call);
         }
         else
         {
@@ -212,11 +212,17 @@ namespace Radium
         }
     }
 
-    void Generator::generateFunctionExitInline()
+    void Generator::generateFunctionExitInline(const NodeCall* call)
     {
+        if (call->argList->args.size() != 1)
+        {
+            RA_ERROR("Invalid number of args for 'exit' Expected 1");
+            exit(EXIT_FAILURE);
+        }
+        
         m_ss << "    ; exit\n";
         mov("rax", "60");
-        mov("rdi", "0");
+        generateExpression(call->argList->args[0], "rdi");
         m_ss << "    syscall\n";
     }
 }

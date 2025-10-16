@@ -48,7 +48,7 @@ namespace Radium
         void generateNumber(const NodeNumber* number, const std::string& dest);
         void generateIdentifier(const NodeIdentifier* ident, const std::string& dest);
         void generateCall(const NodeCall* call, const std::string& dest);
-        void generateFunctionExitInline();
+        void generateFunctionExitInline(const NodeCall* call);
 
         /*
         void generateFunction(const NodeFunction& function);

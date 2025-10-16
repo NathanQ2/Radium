@@ -4,7 +4,7 @@
 #include "../Logger/Logger.h"
 
 namespace Radium {
-    Tokenizer::Tokenizer(const TokenizerConfiguration& config) : m_keywords(config.keywords), m_punctuators(config.punctuators), m_tokenizeIntLit(config.tokenizeIntLit), m_tokenizeIdentifier(config.tokenizeIdentifier) {}
+    Tokenizer::Tokenizer() {}
 
     std::vector<Token> Tokenizer::tokenize(std::string_view source) {
         std::vector<Token> tokens;
@@ -19,7 +19,7 @@ namespace Radium {
                 continue;
             }
             
-            if (std::find(m_punctuators.begin(), m_punctuators.end(), reader.peek().value()) != m_punctuators.end()) {
+            if (std::find(s_punctuators.begin(), s_punctuators.end(), reader.peek().value()) != s_punctuators.end()) {
                 char c = reader.peek().value();
                 std::optional<TokenType> type = Token::getTypeFromString(std::string_view(&c, 1));
                 if (type.has_value()) tokens.emplace_back(type.value());

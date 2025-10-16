@@ -31,9 +31,11 @@ namespace Radium
         
         decl->identifier = new NodeIdentifier { m_reader.consume().value.value() };
         
-        if (m_reader.peek().value().type != parenthesis_open) RA_ERROR("Expected '('");
+        if (m_reader.peek().value().type != parenthesis_open)
+            RA_ERROR("Expected '('");
         m_reader.consume();
-        if (m_reader.peek().value().type != parenthesis_close) RA_ERROR("Expected ')'");
+        if (m_reader.peek().value().type != parenthesis_close)
+            RA_ERROR("Expected ')'");
         m_reader.consume();
         
         NodeBlock* block = parseBlock();
@@ -148,7 +150,6 @@ namespace Radium
         NodeExpression* expression = parseExpression();
 
         return new NodeAssignment {std::pair(ident, expression) };
-        
     }
 
     NodeAdditive* Parser::parseAdditive()
@@ -216,11 +217,32 @@ namespace Radium
     {
         NodeCall* call = new NodeCall;
         call->identifier = parseIdentifier();
-        if (m_reader.peek().value().type == parenthesis_open) RA_ERROR("Expected '('");
+        
+        if (m_reader.peek().value().type != parenthesis_open)
+            RA_ERROR("Expected '('");
         m_reader.consume();
-        if (m_reader.peek().value().type == parenthesis_close) RA_ERROR("Expected ')'");
+        
+        if (m_reader.peek().value().type != parenthesis_close)
+        {
+            call->argList = parseArgList();
+        }
         m_reader.consume();
 
         return call;
+    }
+
+    NodeArgList* Parser::parseArgList()
+    {
+        NodeArgList* argList = new NodeArgList;
+        argList->args = std::vector<NodeExpression*>();
+
+        argList->args.push_back(parseExpression());
+        while (m_reader.peek().value().type == comma)
+        {
+            m_reader.consume();
+            argList->args.push_back(parseExpression());
+        }
+        
+        return argList;
     }
 }
