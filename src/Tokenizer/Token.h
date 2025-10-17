@@ -41,6 +41,7 @@ namespace Radium
             if (str == "func") return func;
             if (str == "ret") return ret;
             if (str == ",") return comma;
+            if (str == "if") return _if;
             if (str == "{") return curly_open;
             if (str == "}") return curly_close;
 

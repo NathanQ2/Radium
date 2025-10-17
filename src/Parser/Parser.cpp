@@ -75,6 +75,9 @@ namespace Radium
         case ret:
             statement->stmt = parseReturn();
             break;
+        case _if:
+            statement->stmt = parseIf();
+            break;
         case curly_open:
             statement->stmt = parseBlock();
             break;
@@ -123,6 +126,28 @@ namespace Radium
         expr->expression = parseExpression();
 
         return expr;
+    }
+
+    NodeIfStatement* Parser::parseIf()
+    {
+        NodeIfStatement* nodeIf = new NodeIfStatement;
+        
+        if (m_reader.peek().value().type != _if)
+            RA_ERROR("Expected 'if'");
+        m_reader.consume();
+        if (m_reader.peek().value().type != parenthesis_open)
+            RA_ERROR("Expected '('");
+        m_reader.consume();
+        
+        nodeIf->expr = parseExpression();
+        
+        if (m_reader.peek().value().type != parenthesis_close)
+            RA_ERROR("Expected ')'");
+        m_reader.consume();
+
+        nodeIf->block = parseBlock();
+
+        return nodeIf;
     }
 
     NodeExpression* Parser::parseExpression()

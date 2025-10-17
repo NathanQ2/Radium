@@ -103,6 +103,7 @@ namespace Radium
             if constexpr (std::is_same_v<std::decay_t<T>, NodeExpressionStatement*>) generateExpressionStatement(stmt);
             if constexpr (std::is_same_v<std::decay_t<T>, NodeReturnStatement*>) generateReturnStatement(stmt);
             if constexpr (std::is_same_v<std::decay_t<T>, NodeBlock*>) generateBlock(stmt);
+            if constexpr (std::is_same_v<std::decay_t<T>, NodeIfStatement*>) generateIfStatement(stmt);
         }, statement->stmt);
 
         m_ss << "\n";
@@ -129,6 +130,22 @@ namespace Radium
         generateExpression(ret->expression, dest);
         mov("rax", dest);
         m_ss << "    ret\n";
+    }
+
+    void Generator::generateIfStatement(const NodeIfStatement* ifStmt)
+    {
+        std::string reg = reserveRegister();
+        generateExpression(ifStmt->expr, reg);
+
+        std::string label = nextLabel();
+
+        m_ss << "    ; if\n";
+        m_ss << "    cmp " << reg << ", 0\n";
+        m_ss << "    jne " << label << "\n";
+        m_ss << "    ; begin true\n";
+        generateBlock(ifStmt->block);
+        m_ss << "    ; end true\n";
+        m_ss << label << ": \n";
     }
 
     void Generator::generateExpression(const NodeExpression* expr, const std::string& dest)

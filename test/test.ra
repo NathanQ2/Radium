@@ -1,12 +1,19 @@
 // This is a comment!
 // Define entrypoint
 func main() {
-    //let x = 10 + 15;
+    let x = 1;
     
-    let y = myFunc();
+    //let y = myFunc();
     
-    exit(y + 10);
-    ret y;
+    if (x) {
+        if (0) {
+            exit(10);
+        };
+        exit(5);
+    };
+    
+    exit(0);
+    //ret y;
 }
 
 func myFunc() {

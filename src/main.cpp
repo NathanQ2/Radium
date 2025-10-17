@@ -26,6 +26,7 @@ std::string tokenTypeToString(TokenType type)
     case func:              return "func";
     case ret:               return "ret";
     case comma:             return "comma";
+    case _if:               return "if";
     case curly_open:        return "curly_open";
     case curly_close:       return "curly_close";
     }

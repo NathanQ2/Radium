@@ -10,11 +10,13 @@ block           = "{" { statement } "}" ;
 statement       = var_decl ";"
                   | expr_stmt ";"
                   | return_stmt ";"
+                  | if_stmt ";"
                   | block ";" ;
 
 var_decl        = "let" assignment ;
 expr_stmt       = expression ;
 return_stmt     = "ret" expression ;
+if_stmt         = "if" "(" expression ")" block ;
 
 expression      = assignment | additive ;
 

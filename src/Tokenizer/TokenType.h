@@ -15,6 +15,7 @@ namespace Radium
         func,
         ret,
         comma,
+        _if,
         curly_open,
         curly_close
     };

@@ -25,6 +25,7 @@ namespace Radium
         [[nodiscard]] NodeVarDecl* parseVarDecl();
         [[nodiscard]] NodeReturnStatement* parseReturn();
         [[nodiscard]] NodeExpressionStatement* parseExpressionStatement();
+        [[nodiscard]] NodeIfStatement* parseIf();
 
         [[nodiscard]] NodeExpression* parseExpression();
         [[nodiscard]] NodeAssignment* parseAssignment();

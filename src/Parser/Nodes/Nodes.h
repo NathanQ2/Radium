@@ -8,6 +8,7 @@
 namespace Radium
 {
     struct NodeExpression;
+    struct NodeBlock;
     
     struct NodeNumber
     {
@@ -74,6 +75,13 @@ namespace Radium
         NodeExpression* expression;
     };
 
+
+    struct NodeIfStatement
+    {
+        NodeExpression* expr;
+        NodeBlock* block;
+    };
+
     struct NodeVarDecl
     {
         NodeAssignment* assignment;
@@ -92,7 +100,8 @@ namespace Radium
             NodeVarDecl*,
             NodeExpressionStatement*,
             NodeReturnStatement*,
-            NodeBlock*> stmt;
+            NodeBlock*,
+            NodeIfStatement*> stmt;
     };
 
     struct NodeParam
