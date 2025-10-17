@@ -186,6 +186,13 @@ namespace Radium
             m_reader.consume();
             additive->right = parseMultiplicative();
         }
+        else if (m_reader.peek().value().type == operator_subtract)
+        {
+            additive->isSubtraction = true;
+            
+            m_reader.consume();
+            additive->right = parseMultiplicative();
+        }
         else
         {
             additive->right = nullptr;

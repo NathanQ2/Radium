@@ -38,6 +38,7 @@ namespace Radium
             if (str == "=") return equal_single;
             if (str == ";") return semicolon;
             if (str == "+") return operator_add;
+            if (str == "-") return operator_subtract;
             if (str == "func") return func;
             if (str == "ret") return ret;
             if (str == ",") return comma;

@@ -23,6 +23,7 @@ std::string tokenTypeToString(TokenType type)
     case semicolon:         return "semicolon";
     case literal_int:       return "literal_int";
     case operator_add:      return "operator_add";
+    case operator_subtract: return "operator_subtract";
     case func:              return "func";
     case ret:               return "ret";
     case comma:             return "comma";

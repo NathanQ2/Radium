@@ -12,6 +12,7 @@ namespace Radium
         semicolon,
         literal_int,
         operator_add,
+        operator_subtract,
         func,
         ret,
         comma,

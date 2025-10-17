@@ -135,11 +135,11 @@ namespace Radium
     void Generator::generateIfStatement(const NodeIfStatement* ifStmt)
     {
         std::string reg = reserveRegister();
+        m_ss << "    ; if\n";
         generateExpression(ifStmt->expr, reg);
 
         std::string label = nextLabel();
 
-        m_ss << "    ; if\n";
         m_ss << "    cmp " << reg << ", 0\n";
         m_ss << "    jne " << label << "\n";
         m_ss << "    ; begin true\n";
@@ -180,7 +180,9 @@ namespace Radium
         {
             std::string temp = reserveRegister();
             generateMultiplicative(additive->right, temp);
-            m_ss << "    add " << dest << ", " << temp << "\n";
+            if (additive->isSubtraction) m_ss << "    sub ";
+            else                         m_ss << "    add ";
+            m_ss << dest << ", " << temp << "\n";
             freeRegister(temp);
         }
     }

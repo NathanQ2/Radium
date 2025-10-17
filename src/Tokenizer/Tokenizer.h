@@ -13,7 +13,7 @@ namespace Radium {
         std::vector<Token> tokenize(std::string_view source);
     private:
         static constexpr std::array<std::string_view, 4> s_keywords = { "let", "func", "ret", "if" };
-        static constexpr std::array<char, 8> s_punctuators = { '(', ')', '=', ';', '+', '{', '}', ',' };
+        static constexpr std::array<char, 9> s_punctuators = { '(', ')', '=', ';', '+', '-', '{', '}', ',' };
         
         static constexpr bool s_tokenizeIntLit = true;
         static constexpr bool s_tokenizeIdentifier = true;

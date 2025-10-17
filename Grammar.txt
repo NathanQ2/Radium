@@ -22,7 +22,7 @@ expression      = assignment | additive ;
 
 assignment      = identifier "=" expression;
 
-additive        = multiplicative ("+" /* | "-" */) multiplicative
+additive        = multiplicative ("+" | "-" ) multiplicative
                   | multiplicative ;
 multiplicative  = primary /*{ ("*" | "/") primary } */ ;
 

@@ -49,6 +49,7 @@ namespace Radium
     {
         NodeMultiplicative* left;
         NodeMultiplicative* right;
+        bool isSubtraction = false;
     };
 
 
