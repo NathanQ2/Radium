@@ -2,55 +2,92 @@
 A hobby programming language. 
 
 # Example
+## test.ra
 ```
+// This is a comment!
 // Define entrypoint
 func main() {
-    // Create 'x' on the stack
-    let x = 10 + 5;
+    let x = 5;
     
-    // Call function
-    myFunc();
-       
-    // Exit with return code 'x'
-    exit(x);
-    ret 0;
+    let y = myFunc();
+    
+    if (x - 5) {
+        if (10 - 1) {
+            exit(10);
+        };
+
+        exit(5);
+    };
+    
+    exit(0);
+
+    //ret y;
 }
 
 func myFunc() {
-    ret 5;
+    ret 15 + 15;
 }
 ```
-
+## Usage
 ```shell
 ./Radium test.ra
 ```
-Generated Linux x86-64 Assembly:
+## Generated Linux x86-64 Assembly:
 ```asm
 global _start
 
 _start:
-    call main
-main:
     ; let
-    mov rbp, 10
-    mov rdi, 5
-    add rbp, rdi
+    mov rbp, 5
     push rbp
 
+    ; let
     ; call myFunc
     call myFunc
+    mov rdi, rax
+    push rdi
 
+    ; if
+    push QWORD [rsp+8]
+    pop rsi
+    mov rdx, 5
+    sub rsi, rdx
+    cmp rsi, 0
+    jne .L1
+    ; begin true
+    ; if
+    mov rdx, 10
+    mov rsp, 1
+    sub rdx, rsp
+    cmp rdx, 0
+    jne .L2
+    ; begin true
     ; exit
-    push QWORD [rsp+0]
-    pop rbp
-    mov rdi, rbp
     mov rax, 60
+    mov rdi, 10
     syscall
 
-    mov rax, 0
-    ret
+    ; end true
+.L2: 
+
+    ; exit
+    mov rax, 60
+    mov rdi, 5
+    syscall
+
+    ; end true
+.L1: 
+
+    ; exit
+    mov rax, 60
+    mov rdi, 0
+    syscall
 
 myFunc:
-    mov rax, 5
+    ; ret
+    mov rsp, 15
+    mov rcx, 15
+    add rsp, rcx
+    mov rax, rsp
     ret
 ```
