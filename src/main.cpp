@@ -10,6 +10,29 @@
 
 using namespace Radium;
 
+
+std::string tokenTypeToString(TokenType type)
+{
+    switch (type)
+    {
+    case parenthesis_open:  return "parenthesis_open";
+    case parenthesis_close: return "parenthesis_close";
+    case let :              return "let";
+    case identifier:        return "identifier";
+    case equal_single:      return "equal_single";
+    case semicolon:         return "semicolon";
+    case literal_int:       return "literal_int";
+    case operator_add:      return "operator_add";
+    case operator_subtract: return "operator_subtract";
+    case func:              return "func";
+    case ret:               return "ret";
+    case comma:             return "comma";
+    case _if:               return "if";
+    case curly_open:        return "curly_open";
+    case curly_close:       return "curly_close";
+    }
+}
+
 int main(int argc, char* argv[])
 {
     Logger::init();
@@ -30,13 +53,21 @@ int main(int argc, char* argv[])
         ifs.close();
     }
 
-    Tokenizer tokenizer(source);
-    std::vector<Token> tokens = tokenizer.tokenize();
+    Tokenizer tokenizer = Tokenizer();
+    std::vector<Token> tokens = tokenizer.tokenize(source);
+
+    std::cout << "Tokens:" << std::endl;
+    for (const auto& token : tokens) {
+        std::cout << "("<< tokenTypeToString(token.type);
+        if (token.value.has_value()) std::cout << ", " << token.value.value();
+        std::cout << ")";
+    }
+    std::cout << std::endl;
 
     Parser parser(tokens);
-    NodeRoot root = parser.parse();
+    NodeProgram program = parser.parse();
 
-    Generator generator(root);
+    Generator generator(program);
     std::string output = generator.generate();
     RA_TRACE("Compilation result:\n{0}", output);
 

@@ -1,131 +1,63 @@
 #include "Tokenizer.h"
 
-#include <iostream>
+#include "../Reader.h"
+#include "../Logger/Logger.h"
 
-namespace Radium
-{
-    Tokenizer::Tokenizer(std::string  source)
-        : m_source(std::move(source)), m_index(0)
-    {
-    }
+namespace Radium {
+    Tokenizer::Tokenizer() {}
 
-    std::vector<Token> Tokenizer::tokenize()
-    {
-        std::vector<Token> tokens = std::vector<Token>();
+    std::vector<Token> Tokenizer::tokenize(std::string_view source) {
+        std::vector<Token> tokens;
+        Reader<char> reader(std::vector(source.begin(), source.end()));
 
-        std::string buf;
-        while(peek().has_value())
-        {
-            if(std::isspace(peek().value()))
-            {
-                consume();
-                buf.clear();
+        std::vector<char> word;
+        while (reader.peek().has_value()) {
+            if (reader.peek().value() == '/' && reader.peek(1).has_value() && reader.peek(1).value() == '/') {
+                reader.consumeUntil([](const char c) { return c == '\n'; });
+                reader.consume();
+
+                continue;
+            }
+            
+            if (std::find(s_punctuators.begin(), s_punctuators.end(), reader.peek().value()) != s_punctuators.end()) {
+                char c = reader.peek().value();
+                std::optional<TokenType> type = Token::getTypeFromString(std::string_view(&c, 1));
+                if (type.has_value()) tokens.emplace_back(type.value());
+                else RA_ERROR("Found punctuator, {0}, but could not get TokenType", c);
+
+                reader.consume();
+                continue;
+            }
+
+            if (std::isspace(reader.peek().value())) {
+                word.clear();
+                reader.consume();
 
                 continue;
             }
 
-            if (peek().value() == '(')
-            {
-                tokens.push_back(Token {.type = parenthesis_open, .value = std::nullopt});
-                buf.clear();
-                consume();
+            // Begin word
+            if (std::isalpha(reader.peek().value())) {
+                word = reader.consumeUntil([this](const char c) { return isSpaceOrPunctuator(c); });
 
-                continue;
-            }
-
-            if(peek().value() == ')')
-            {
-                tokens.push_back(Token {.type = parenthesis_close, .value = std::nullopt});
-                buf.clear();
-                consume();
-
-                continue;
-            }
-
-            if(peek().value() == ';')
-            {
-                tokens.push_back(Token {.type = semicolon, .value = std::nullopt});
-                buf.clear();
-                consume();
-
-                continue;
-            }
-
-            if(peek().value() == '=' && !peekIs('=', 1))
-            {
-                tokens.push_back(Token {.type = equal_single});
-                buf.clear();
-                consume();
-
-                continue;
-            }
-
-            if(peek().value() == '+' && peekIs(' ', 1))
-            {
-                tokens.push_back(Token { .type = operator_add });
-                buf.clear();
-                consume();
-
-                continue;
-            }
-
-            if(std::isalpha(peek().value()))
-            {
-                while(std::isalpha(peek().value()))
-                {
-                    buf.push_back(consume().value());
+                std::optional<TokenType> type = Token::getTypeFromString(std::string_view(word.begin(), word.end()));
+                // Keyword
+                if (type.has_value()) {
+                    tokens.emplace_back(type.value());
                 }
-
-                if(buf == "exit")
-                {
-                    tokens.push_back(Token {.type = builtin_exit});
-                    buf.clear();
-                }
-                else if(buf == "let")
-                {
-                    tokens.push_back(Token {.type = let});
-                    buf.clear();
-
-                }
-                else // Assume this token is an identifier
-                {
-                    tokens.push_back(Token {.type = identifier, .value = buf});
-                    buf.clear();
+                // Identifier
+                else {
+                    tokens.emplace_back(identifier, std::string(word.begin(), word.end()));
                 }
             }
+            else if (std::isdigit(reader.peek().value())) {
+                // Assume int lit
+                word = reader.consumeUntil([](const char c) { return !std::isdigit(c); });
 
-            if(std::isdigit(peek().value()))
-            {
-                while(std::isdigit(peek().value()))
-                {
-                    buf.push_back(consume().value());
-                }
-
-                tokens.push_back(Token {.type = literal_int, .value = buf});
-                buf.clear();
-
-                continue;
+                tokens.emplace_back(literal_int, std::string(word.begin(), word.end()));
             }
         }
 
-        return tokens;
-    }
-
-    std::optional<char> Tokenizer::peek(const int offset)
-    {
-        if (m_index + offset >= m_source.length())
-            return  std::nullopt;
-
-        return m_source.at(m_index + offset);
-    }
-
-    std::optional<char> Tokenizer::consume()
-    {
-        return m_source.at(m_index++);
-    }
-
-    bool Tokenizer::peekIs(char a, const int offset)
-    {
-        return peek(offset).has_value() && peek(offset).value() == a;
+        return tokens; 
     }
 }

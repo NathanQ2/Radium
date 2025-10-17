@@ -11,7 +11,13 @@ namespace Radium
         equal_single,
         semicolon,
         literal_int,
-        builtin_exit,
-        operator_add
+        operator_add,
+        operator_subtract,
+        func,
+        ret,
+        comma,
+        _if,
+        curly_open,
+        curly_close
     };
 }

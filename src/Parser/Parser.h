@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "../Reader.h"
 #include "../Tokenizer/Token.h"
 #include "Nodes/Nodes.h"
 
@@ -11,24 +12,29 @@ namespace Radium
 {
     class Parser {
     public:
-        explicit Parser(std::vector<Token> tokens);
+        explicit Parser(const std::vector<Token>& tokens);
 
-        NodeRoot parse();
+        NodeProgram parse();
     private:
-        std::vector<Token> m_tokens;
-        size_t m_index{};
+        Reader<Token> m_reader;
 
-        std::optional<Token> peek(int offset = 0);
-        std::optional<Token> consume(int offset = 1);
+        [[nodiscard]] NodeFunctionDecl* parseFunctionDecl();
+        [[nodiscard]] NodeBlock* parseBlock();
+        
+        [[nodiscard]] NodeStatement* parseStatement();
+        [[nodiscard]] NodeVarDecl* parseVarDecl();
+        [[nodiscard]] NodeReturnStatement* parseReturn();
+        [[nodiscard]] NodeExpressionStatement* parseExpressionStatement();
+        [[nodiscard]] NodeIfStatement* parseIf();
 
-        bool ifType(int offset, TokenType type);
-        bool ifType(TokenType type) { return ifType(0, type); }
-
-
-        std::optional<NodeExpression> parseExpression(int offset = 0);
-        std::optional<NodeExpressionIntLit> tryParseExpressionIntLit(int offset = 0);
-        std::optional<NodeExpressionIdentifier> tryParseExpressionIdentifier(int offset = 0);
-        std::optional<NodeStatementExit> parseExit();
-        std::optional<NodeStatementLet> parseLet();
+        [[nodiscard]] NodeExpression* parseExpression();
+        [[nodiscard]] NodeAssignment* parseAssignment();
+        [[nodiscard]] NodeAdditive* parseAdditive();
+        [[nodiscard]] NodeMultiplicative* parseMultiplicative();
+        [[nodiscard]] NodePrimary* parsePrimary();
+        [[nodiscard]] NodeNumber* parseNumber();
+        [[nodiscard]] NodeIdentifier* parseIdentifier();
+        [[nodiscard]] NodeCall* parseCall();
+        [[nodiscard]] NodeArgList* parseArgList();
     };
 }

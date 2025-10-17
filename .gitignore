@@ -4,6 +4,8 @@
 
 .vscode
 
+*.DS_STORE
+
 # cmake
 cmake-build-debug
 cmake-build-release

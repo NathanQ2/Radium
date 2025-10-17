@@ -1,26 +1,25 @@
 #pragma once
 
+#include "Token.h"
+
 #include <string>
 #include <vector>
 
-#include "Token.h"
-
-namespace Radium
-{
-    class Tokenizer
-    {
+namespace Radium {
+    class Tokenizer {
     public:
-        explicit Tokenizer(std::string  source);
+        explicit Tokenizer();
 
-        std::vector<Token> tokenize();
-
+        std::vector<Token> tokenize(std::string_view source);
     private:
-        std::optional<char> peek(int offset = 0);
-        std::optional<char> consume();
-
-        bool peekIs(char a, int offset = 1);
-
-        std::string m_source;
-        size_t m_index;
+        static constexpr std::array<std::string_view, 4> s_keywords = { "let", "func", "ret", "if" };
+        static constexpr std::array<char, 9> s_punctuators = { '(', ')', '=', ';', '+', '-', '{', '}', ',' };
+        
+        static constexpr bool s_tokenizeIntLit = true;
+        static constexpr bool s_tokenizeIdentifier = true;
+        
+        static bool isSpaceOrPunctuator(const char c) {
+            return std::isspace(c) || std::find(s_punctuators.begin(), s_punctuators.end(), c) != s_punctuators.end();
+        };
     };
 }

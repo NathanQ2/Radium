@@ -1,209 +1,280 @@
 #include "Parser.h"
 
+#include <codecvt>
 #include <iostream>
 
 #include "../Logger/Logger.h"
 
 namespace Radium
 {
-    Parser::Parser(std::vector<Token> tokens)
-        : m_tokens(std::move(tokens)),
-        m_index(0)
-    {
-    }
+    Parser::Parser(const std::vector<Token>& tokens) : m_reader(tokens)
+    {}
 
-    NodeRoot Parser::parse()
+    NodeProgram Parser::parse()
     {
-        std::vector<NodeStatement> statements;
-        while(peek().has_value())
+        NodeProgram program;
+        program.functions = std::vector<NodeFunctionDecl*>();
+        while (m_reader.peek().has_value())
         {
-            if(peek().value().type == TokenType::builtin_exit)
-            {
-                if (auto exitStatement = parseExit())
-                {
-                    statements.push_back(NodeStatement {.variant = exitStatement.value()});
-                }
-                else
-                {
-                    RA_ERROR("Failed to parse exit statement!");
-                    exit(EXIT_FAILURE);
-                }
-
-                break;
-            }
-            if(peek().value().type == TokenType::let)
-            {
-                if(auto letStatement = parseLet())
-                {
-                    statements.push_back(NodeStatement {.variant = letStatement.value()});
-                }
-                else
-                {
-                    RA_ERROR("Failed to parse variable declaration!");
-                    exit(EXIT_FAILURE);
-                }
-
-                continue;
-            }
+            program.functions.push_back(parseFunctionDecl());
         }
 
-        return NodeRoot{.statements = std::move(statements)};
+        return program;
     }
 
-    std::optional<Token> Parser::peek(int offset)
+    NodeFunctionDecl* Parser::parseFunctionDecl()
     {
-        if(m_index + offset >= m_tokens.size())
-            return std::nullopt;
+        NodeFunctionDecl* decl = new NodeFunctionDecl;
+        if (m_reader.peek().value().type != func) RA_ERROR("Expected 'func'");
+        m_reader.consume();
+        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident");
+        
+        decl->identifier = new NodeIdentifier { m_reader.consume().value.value() };
+        
+        if (m_reader.peek().value().type != parenthesis_open)
+            RA_ERROR("Expected '('");
+        m_reader.consume();
+        if (m_reader.peek().value().type != parenthesis_close)
+            RA_ERROR("Expected ')'");
+        m_reader.consume();
+        
+        NodeBlock* block = parseBlock();
+        decl->block = block;
 
-        return m_tokens.at(m_index + offset);
+        return decl;
     }
 
-    std::optional<Token> Parser::consume(int offset)
+    NodeBlock* Parser::parseBlock()
     {
-        m_index += offset;
-        return m_tokens.at(m_index);
-    }
+        if (m_reader.peek().value().type != curly_open) RA_ERROR("Expected '{");
+        m_reader.consume();
+        
+        NodeBlock* block = new NodeBlock;
 
-    bool Parser::ifType(int offset, TokenType type)
-    {
-        return peek(offset).has_value() && peek(offset).value().type == type;
-    }
+        block->statements = std::vector<NodeStatement*>();
 
-    std::optional<NodeExpression> Parser::parseExpression(int offset)
-    {
-        // just int lit
-        auto intLit = tryParseExpressionIntLit(offset);
-        if (intLit.has_value() && !ifType(1, TokenType::operator_add))
+        while (m_reader.peek().value().type != curly_close)
         {
-            consume(offset + 1);
-            return std::optional<NodeExpression>(intLit);
+            NodeStatement* statement = parseStatement();
+            block->statements.push_back(statement);
         }
+        m_reader.consume();
 
-        // just identifier
-        auto identifier = tryParseExpressionIdentifier(offset);
-        if (identifier.has_value() && !ifType(1, TokenType::operator_add))
+        return block;
+    }
+
+    NodeStatement* Parser::parseStatement()
+    {
+        NodeStatement* statement = new NodeStatement;
+        
+        switch (m_reader.peek()->type)
         {
-            consume(offset + 1);
-            return std::optional<NodeExpression>(identifier);
-        }
-
-        // add operator to the right
-        if (ifType(1, TokenType::operator_add))
-        {
-            NodeExpression* lhs = nullptr;
-            NodeExpression* rhs = nullptr;
-
-            if(ifType(TokenType::literal_int))
+        case let:
+            statement->stmt = parseVarDecl();
+            break;
+        case ret:
+            statement->stmt = parseReturn();
+            break;
+        case _if:
+            statement->stmt = parseIf();
+            break;
+        case curly_open:
+            statement->stmt = parseBlock();
+            break;
+        default:
+            NodeExpressionStatement* expr = parseExpressionStatement();
+            if (expr == nullptr)
             {
-                if(auto intLit = tryParseExpressionIntLit(offset))
-                {
-                    consume(offset + 1);
-                    lhs = new NodeExpression { .variant = intLit.value() };
-                }
+                RA_ERROR("Could not parse statement!");
+                exit(1);
             }
-            else if(ifType(TokenType::identifier))
-            {
-                if (auto identifier = tryParseExpressionIdentifier())
-                {
-                    consume(offset + 1);
-                    lhs = new NodeExpression { .variant = identifier.value() };
-                }
-            }
-            consume(offset + 1);
-
-            auto rhExpr = parseExpression();
-            if(rhExpr.has_value())
-            {
-                rhs = new NodeExpression { .variant = rhExpr.value().variant };
-            }
-
-            if(lhs == nullptr || rhs == nullptr)
-            {
-                return std::nullopt;
-            }
-
-            return NodeExpression { .variant = NodeExpressionAdd { .lhs = lhs, .rhs = rhs }};
+            
+            statement->stmt = expr;
+            break;
         }
 
-        return std::nullopt;
+        m_reader.consume();
+        return statement;
     }
 
-    std::optional<NodeExpressionIntLit> Parser::tryParseExpressionIntLit(int offset)
+    NodeVarDecl* Parser::parseVarDecl()
     {
-        if (ifType(offset, TokenType::literal_int))
+        if (m_reader.peek().value().type != let) RA_ERROR("Expected 'let'");
+        m_reader.consume();
+        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident");
+        NodeVarDecl* decl = new NodeVarDecl;
+        decl->assignment = parseAssignment();
+
+        return decl;
+    }
+
+    NodeReturnStatement* Parser::parseReturn()
+    {
+        if (m_reader.peek().value().type != ret) RA_ERROR("Expected 'ret'");
+        m_reader.consume();
+
+        NodeReturnStatement* ret = new NodeReturnStatement;
+        ret->expression = parseExpression();
+
+        return ret;
+    }
+
+    NodeExpressionStatement* Parser::parseExpressionStatement()
+    {
+        NodeExpressionStatement* expr = new NodeExpressionStatement;
+        
+        expr->expression = parseExpression();
+
+        return expr;
+    }
+
+    NodeIfStatement* Parser::parseIf()
+    {
+        NodeIfStatement* nodeIf = new NodeIfStatement;
+        
+        if (m_reader.peek().value().type != _if)
+            RA_ERROR("Expected 'if'");
+        m_reader.consume();
+        if (m_reader.peek().value().type != parenthesis_open)
+            RA_ERROR("Expected '('");
+        m_reader.consume();
+        
+        nodeIf->expr = parseExpression();
+        
+        if (m_reader.peek().value().type != parenthesis_close)
+            RA_ERROR("Expected ')'");
+        m_reader.consume();
+
+        nodeIf->block = parseBlock();
+
+        return nodeIf;
+    }
+
+    NodeExpression* Parser::parseExpression()
+    {
+        NodeExpression* expression = new NodeExpression;
+        if (m_reader.peek().value().type == identifier && m_reader.peek(1).has_value() && m_reader.peek(1).value().type == equal_single)
         {
-            auto expr = NodeExpressionIntLit {.value = peek(offset).value().value.value()};
-
-            return expr;
+            expression->expr = parseAssignment();
         }
-
-        return std::nullopt;
-    }
-
-    std::optional<NodeExpressionIdentifier> Parser::tryParseExpressionIdentifier(int offset)
-    {
-        if(ifType(offset, TokenType::identifier) && !ifType(TokenType::operator_add))
+        else
         {
-            auto expr = NodeExpressionIdentifier {.value = peek(offset).value().value.value()};
-
-            return expr;
+            expression->expr = parseAdditive();
         }
 
-        return std::nullopt;
+        return expression;
     }
 
-    std::optional<NodeStatementExit> Parser::parseExit()
+    NodeAssignment* Parser::parseAssignment()
     {
-        // Expects current token to be of type builtin_exit
-        if (!peek().has_value() || peek().value().type != TokenType::builtin_exit)
-            return std::nullopt;
+        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident");
+        NodeIdentifier* ident = new NodeIdentifier { m_reader.consume().value.value() };
+        if (m_reader.peek().value().type != equal_single) RA_ERROR("Expected '='");
+        m_reader.consume();
+        
+        NodeExpression* expression = parseExpression();
 
-        // Expect next token to be of type parenthesis_open
-        consume();
-        if(!peek().has_value() || peek().value().type != TokenType::parenthesis_open)
-            return std::nullopt;
-
-        // Expect next token to be of type expression
-        consume();
-        std::optional<NodeExpression> expression = parseExpression();
-
-        if(!expression.has_value())
-            return std::nullopt;
-
-        if(!peek().has_value() || peek().value().type != TokenType::parenthesis_close)
-            return std::nullopt;
-
-        consume();
-        if(!peek().has_value() || peek().value().type != TokenType::semicolon)
-            return std::nullopt;
-
-        return NodeStatementExit {.expression = expression.value()};
+        return new NodeAssignment {std::pair(ident, expression) };
     }
 
-    std::optional<NodeStatementLet> Parser::parseLet()
+    NodeAdditive* Parser::parseAdditive()
     {
-        if(!peek().has_value() || peek().value().type != TokenType::let)
-            return std::nullopt;
+        NodeAdditive* additive = new NodeAdditive;
+        additive->left = parseMultiplicative();
+        if (m_reader.peek().value().type == operator_add)
+        {
+            m_reader.consume();
+            additive->right = parseMultiplicative();
+        }
+        else if (m_reader.peek().value().type == operator_subtract)
+        {
+            additive->isSubtraction = true;
+            
+            m_reader.consume();
+            additive->right = parseMultiplicative();
+        }
+        else
+        {
+            additive->right = nullptr;
+        }
 
-        consume();
-        if(!peek().has_value() || peek().value().type != TokenType::identifier)
-            return std::nullopt;
+        return additive;
+    }
 
-        std::string identifier = peek().value().value.value();
+    NodeMultiplicative* Parser::parseMultiplicative()
+    {
+        NodeMultiplicative* multiplicative = new NodeMultiplicative;
+        multiplicative->primary = parsePrimary();
 
-        consume();
-        if(!peek().has_value() || peek().value().type != TokenType::equal_single)
-            return std::nullopt;
+        return multiplicative;
+    }
 
-        consume();
-        std::optional<NodeExpression> expression = parseExpression();
-        if(!expression.has_value())
-            return std::nullopt;
+    NodePrimary* Parser::parsePrimary()
+    {
+        // Number
+        if (m_reader.peek().value().type == literal_int)
+        {
+            return new NodePrimary { parseNumber() };
+        }
+        // Ident
+        if (m_reader.peek().value().type == identifier && m_reader.peek(1).value().type != parenthesis_open)
+        {
+            return new NodePrimary { parseIdentifier() };
+        }
+        // Call
+        if (m_reader.peek().value().type == identifier && m_reader.peek(1).value().type == parenthesis_open)
+        {
+            return new NodePrimary { parseCall() };
+        }
 
-        if(!peek().has_value() || peek().value().type != semicolon)
-            return std::nullopt;
+        RA_ERROR("Expected primary");
+        return nullptr;
+    }
 
-        consume();
-        return NodeStatementLet {.identifier = identifier, .expression = expression.value()};
+    NodeNumber* Parser::parseNumber()
+    {
+        if (m_reader.peek().value().type != literal_int) RA_ERROR("Expected int literal.");
+
+        return new NodeNumber { m_reader.consume().value.value() };
+    }
+    
+    NodeIdentifier* Parser::parseIdentifier()
+    {
+        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident.");
+
+        return new NodeIdentifier { m_reader.consume().value.value() };
+    }
+
+    NodeCall* Parser::parseCall()
+    {
+        NodeCall* call = new NodeCall;
+        call->identifier = parseIdentifier();
+        
+        if (m_reader.peek().value().type != parenthesis_open)
+            RA_ERROR("Expected '('");
+        m_reader.consume();
+        
+        if (m_reader.peek().value().type != parenthesis_close)
+        {
+            call->argList = parseArgList();
+        }
+        m_reader.consume();
+
+        return call;
+    }
+
+    NodeArgList* Parser::parseArgList()
+    {
+        NodeArgList* argList = new NodeArgList;
+        argList->args = std::vector<NodeExpression*>();
+
+        argList->args.push_back(parseExpression());
+        while (m_reader.peek().value().type == comma)
+        {
+            m_reader.consume();
+            argList->args.push_back(parseExpression());
+        }
+        
+        return argList;
     }
 }

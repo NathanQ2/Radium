@@ -11,34 +11,57 @@ namespace Radium
 {
     class Generator {
     public:
-        explicit Generator(NodeRoot nodeRoot);
+        explicit Generator(NodeProgram program);
 
         std::string generate();
     private:
-        NodeRoot m_nodeRoot;
+        NodeProgram m_program;
 
-        std::stringstream m_sstream;
+        std::stringstream m_ss;
 
         std::unordered_map<std::string, size_t> m_identifierStackPositions;
         std::unordered_map<std::string, bool> m_registers;
-
-        void mov(const std::string& reg, const std::string& val);
-
         size_t m_stackSizeBytes;
+
+        int m_labels = 1;
+
+        std::string nextLabel()
+        {
+            std::stringstream ss;
+            ss << ".L" << m_labels;
+            
+            m_labels++;
+            
+            return ss.str();
+        }
+
+        void mov(const std::string& dest, const std::string& val);
+
         void push(const std::string& reg, size_t sizeBytes);
         void pop(const std::string& reg, size_t sizeBytes);
 
-        std::string pushRegister();
-        void popRegister(const std::string& reg);
+        std::string reserveRegister();
+        void freeRegister(const std::string& reg);
 
-        void generateStatement(const NodeStatement& statement);
-        void generateStatementExit(const NodeStatementExit& statement);
-        void generateStatementLet(const NodeStatementLet& statement);
+        void generateFunction(const NodeFunctionDecl* func);
+        void generateBlock(const NodeBlock* block);
+        void generateStatement(const NodeStatement* statement);
 
-        void generateExpression(const NodeExpression& expression, const std::string& desinationRegister);
-        void generateExpressionIntLit(const NodeExpressionIntLit& expression, const std::string& destinationRegister);
-        void generateExpressionIdentifier(const NodeExpressionIdentifier& expression, const std::string& destinationRegister);
-        void generateExpressionAdd(const NodeExpressionAdd& expression, const std::string& destinationRegister, const std::string& tempRegister);
+        void generateVarDecl(const NodeVarDecl* varDecl);
+        void generateExpressionStatement(const NodeExpressionStatement* statement);
+        void generateReturnStatement(const NodeReturnStatement* ret);
+        void generateIfStatement(const NodeIfStatement* ifStmt);
+
+        void generateExpression(const NodeExpression* expr, const std::string& dest);
+        void generateAssignment(const NodeAssignment* assignment, const std::string& dest);
+        void generateAssignment(std::pair<NodeIdentifier*, NodeExpression*> assignment, const std::string& dest);
+        void generateAdditive(const NodeAdditive* additive, const std::string& dest);
+        void generateMultiplicative(const NodeMultiplicative* multi, const std::string& dest);
+        void generatePrimary(const NodePrimary* primary, const std::string& dest);
+        void generateNumber(const NodeNumber* number, const std::string& dest);
+        void generateIdentifier(const NodeIdentifier* ident, const std::string& dest);
+        void generateCall(const NodeCall* call, const std::string& dest);
+        void generateFunctionExitInline(const NodeCall* call);
     };
 
 }
