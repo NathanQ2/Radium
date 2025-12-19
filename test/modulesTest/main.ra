@@ -1,7 +1,10 @@
+// Define this module
 mod main;
 
-include myMod;
+// Include the 'std' module
+include std;
 
 func main() {
-    exitWith5();
+    // Call a function contained in the 'std' module
+    exitWithSomething();
 }

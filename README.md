@@ -4,6 +4,8 @@ A hobby programming language.
 # Example
 ## test.ra
 ```
+mod test;
+
 // This is a comment!
 // Define entrypoint
 func main() {
@@ -91,3 +93,12 @@ myFunc:
     mov rax, rsp
     ret
 ```
+
+# Todo
+- [ ] Basic type system (primitives)
+- [ ] Function parameters
+- [ ] Better error messages
+- [ ] Structs
+- [ ] Else/else if blocks
+- [ ] Print / begin std lib
+- [ ] Make local variables referenced by their position relative to stack frame
