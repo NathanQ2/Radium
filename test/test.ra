@@ -1,3 +1,7 @@
+mod test;
+
+include test;
+
 // This is a comment!
 // Define entrypoint
 func main() {

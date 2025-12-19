@@ -1,0 +1,7 @@
+mod main;
+
+include myMod;
+
+func main() {
+    exitWith5();
+}

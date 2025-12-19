@@ -1,0 +1,5 @@
+mod myMod;
+
+func exitWith5() {
+    exit(5);
+}

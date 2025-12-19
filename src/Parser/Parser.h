@@ -14,10 +14,12 @@ namespace Radium
     public:
         explicit Parser(const std::vector<Token>& tokens);
 
-        NodeProgram parse();
+        NodeRoot parse();
     private:
         Reader<Token> m_reader;
 
+        [[nodiscard]] NodeModuleDecl* parseModuleDecl();
+        [[nodiscard]] NodeModuleInclude* parseModuleInclude();
         [[nodiscard]] NodeFunctionDecl* parseFunctionDecl();
         [[nodiscard]] NodeBlock* parseBlock();
         
