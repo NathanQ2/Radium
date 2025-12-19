@@ -1,0 +1,5 @@
+mod math;
+
+func doSomething() {
+    ret 10 + 5;
+}

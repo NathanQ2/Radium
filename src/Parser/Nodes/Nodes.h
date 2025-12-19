@@ -121,8 +121,21 @@ namespace Radium
         NodeBlock* block;
     };
     
-    struct NodeProgram
+    struct NodeModuleDecl
     {
+        std::string modPath;
+    };
+    
+    struct NodeModuleInclude
+    {
+        std::string modPath;
+    };
+    
+    struct NodeRoot
+    {
+        NodeModuleDecl* modDecl;
+        
+        std::vector<NodeModuleInclude*> includes;
         std::vector<NodeFunctionDecl*> functions;
     };
 }

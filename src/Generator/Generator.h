@@ -3,6 +3,7 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "../CompilationUnit.h"
 #include "../Parser/Nodes/Nodes.h"
 
 using namespace Radium;
@@ -11,11 +12,12 @@ namespace Radium
 {
     class Generator {
     public:
-        explicit Generator(NodeProgram program);
+        explicit Generator(const CompilationUnit& cu);
 
         std::string generate();
     private:
-        NodeProgram m_program;
+        const CompilationUnit& m_cu;
+        std::unordered_map<std::string_view, bool> m_generatedModules;
 
         std::stringstream m_ss;
 
@@ -43,6 +45,8 @@ namespace Radium
         std::string reserveRegister();
         void freeRegister(const std::string& reg);
 
+        void generateModule(const Module& module);
+        
         void generateFunction(const NodeFunctionDecl* func);
         void generateBlock(const NodeBlock* block);
         void generateStatement(const NodeStatement* statement);

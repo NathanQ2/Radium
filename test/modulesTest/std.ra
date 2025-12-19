@@ -1,0 +1,12 @@
+mod std;
+
+// Include 'math' module
+include math;
+
+func exitWithSomething() {
+    // Call function in 'math' module and capture its return
+    let val = doSomething();
+    
+    // Exit with the captured value
+    exit(val);
+}

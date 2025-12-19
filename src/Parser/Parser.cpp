@@ -10,16 +10,71 @@ namespace Radium
     Parser::Parser(const std::vector<Token>& tokens) : m_reader(tokens)
     {}
 
-    NodeProgram Parser::parse()
+    NodeRoot Parser::parse()
     {
-        NodeProgram program;
+        NodeRoot program;
         program.functions = std::vector<NodeFunctionDecl*>();
         while (m_reader.peek().has_value())
         {
-            program.functions.push_back(parseFunctionDecl());
+            switch (m_reader.peek().value().type)
+            {
+            case mod:
+                program.modDecl = parseModuleDecl();
+                
+                break;
+            case include:
+                program.includes.push_back(parseModuleInclude());
+                
+                break;
+            case func:
+                program.functions.push_back(parseFunctionDecl());
+                
+                break;
+            default:
+                RA_ERROR("Invalid token in module body");
+                
+                break;
+            }
         }
 
         return program;
+    }
+
+    NodeModuleDecl* Parser::parseModuleDecl()
+    {
+        NodeModuleDecl* decl = new NodeModuleDecl;
+        
+        if (m_reader.peek().value().type != mod) 
+            RA_ERROR("Expected 'mod'");
+        m_reader.consume();
+        
+        if (m_reader.peek().value().type != identifier)
+            RA_ERROR("Expected identifier!");
+        decl->modPath = m_reader.consume().value.value();
+        
+        if (m_reader.peek().value().type != semicolon)
+            RA_ERROR("Expected ';'");
+        m_reader.consume();
+        
+        return decl;
+    }
+
+    NodeModuleInclude* Parser::parseModuleInclude()
+    {
+        NodeModuleInclude* include = new NodeModuleInclude;
+        if (m_reader.peek().value().type != TokenType::include) 
+            RA_ERROR("Expected 'include'");
+        m_reader.consume();
+        
+        if (m_reader.peek().value().type != identifier)
+            RA_ERROR("Expected identifier!");
+        include->modPath = m_reader.consume().value.value();
+        
+        if (m_reader.peek().value().type != semicolon)
+            RA_ERROR("Expected ';'");
+        m_reader.consume();
+        
+        return include;
     }
 
     NodeFunctionDecl* Parser::parseFunctionDecl()

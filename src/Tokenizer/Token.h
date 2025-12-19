@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "TokenType.h"
+#include "../Logger/Logger.h"
 
 namespace Radium
 {
@@ -41,11 +42,13 @@ namespace Radium
             if (str == "-") return operator_subtract;
             if (str == "func") return func;
             if (str == "ret") return ret;
+            if (str == "mod") return mod;
+            if (str == "include") return include;
             if (str == ",") return comma;
             if (str == "if") return _if;
             if (str == "{") return curly_open;
             if (str == "}") return curly_close;
-
+            
             return std::nullopt;
         }
 

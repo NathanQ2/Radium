@@ -8,8 +8,8 @@
 
 namespace Radium
 {
-    Generator::Generator(NodeProgram program)
-        : m_program(program),
+    Generator::Generator(const CompilationUnit& cu)
+        : m_cu(cu),
           m_stackSizeBytes(0)
     {
         m_registers["rax"] = false;
@@ -33,10 +33,12 @@ namespace Radium
             else generateFunction(*function);
         }
         */
-
-        for (const NodeFunctionDecl* func : m_program.functions)
+        
+        const std::vector<Module> modules = m_cu.getModules();
+        for (const Module& module : modules)
         {
-            generateFunction(func);
+            if (m_generatedModules[module.getPath()] == false)
+                generateModule(module);
         }
 
         return m_ss.str();
@@ -76,6 +78,23 @@ namespace Radium
     void Generator::freeRegister(const std::string& reg)
     {
         m_registers[reg] = false;
+    }
+
+    void Generator::generateModule(const Module& module)
+    {
+        const NodeRoot& root = module.getRoot();
+        
+        for (const NodeModuleInclude* include : root.includes)
+        {
+            generateModule(m_cu.getModuleByPath(include->modPath));
+        }
+        
+        for (const NodeFunctionDecl* func : root.functions)
+        {
+            generateFunction(func);
+        }
+        
+        m_generatedModules[module.getPath()] = true;
     }
 
     void Generator::generateFunction(const NodeFunctionDecl* func)

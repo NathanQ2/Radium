@@ -15,6 +15,8 @@ namespace Radium
         operator_subtract,
         func,
         ret,
+        mod,
+        include,
         comma,
         _if,
         curly_open,

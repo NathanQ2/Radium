@@ -1,5 +1,7 @@
-program         = { function_decl } ;
+root            = { function_decl } ;
 
+mod_decl        = "mod" identifier ";" ;
+include         = "include" identifier ";" ;
 function_decl   = "func" identifier "(" /*[ param_list ]*/ ")" block ;
 
 param_list      = param { "," param } ;

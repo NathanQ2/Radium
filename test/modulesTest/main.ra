@@ -1,0 +1,10 @@
+// Define this module
+mod main;
+
+// Include the 'std' module
+include std;
+
+func main() {
+    // Call a function contained in the 'std' module
+    exitWithSomething();
+}
