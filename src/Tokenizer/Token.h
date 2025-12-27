@@ -9,7 +9,7 @@
 
 namespace Radium
 {
-    enum BinaryOpAssociativity
+    enum class BinaryOpAssociativity
     {
         Left,
         Right
@@ -17,7 +17,7 @@ namespace Radium
 
     class Token {
     public:
-        Token(TokenType type, std::string value)
+        Token(TokenType type, std::string&& value)
         {
             this->type = type;
             this->value = value;
@@ -33,21 +33,21 @@ namespace Radium
         std::optional<std::string> value;
 
         [[nodiscard]] static std::optional<TokenType> getTypeFromString(std::string_view str) {
-            if (str == "(") return parenthesis_open;
-            if (str == ")") return parenthesis_close;
-            if (str == "let") return let;
-            if (str == "=") return equal_single;
-            if (str == ";") return semicolon;
-            if (str == "+") return operator_add;
-            if (str == "-") return operator_subtract;
-            if (str == "func") return func;
-            if (str == "ret") return ret;
-            if (str == "mod") return mod;
-            if (str == "include") return include;
-            if (str == ",") return comma;
-            if (str == "if") return _if;
-            if (str == "{") return curly_open;
-            if (str == "}") return curly_close;
+            if (str == "(") return TokenType::parenthesis_open;
+            if (str == ")") return TokenType::parenthesis_close;
+            if (str == "let") return TokenType::let;
+            if (str == "=") return TokenType::equal_single;
+            if (str == ";") return TokenType::semicolon;
+            if (str == "+") return TokenType::plus;
+            if (str == "-") return TokenType::minus;
+            if (str == "func") return TokenType::func;
+            if (str == "ret") return TokenType::ret;
+            if (str == "mod") return TokenType::mod;
+            if (str == "include") return TokenType::include;
+            if (str == ",") return TokenType::comma;
+            if (str == "if") return TokenType::_if;
+            if (str == "{") return TokenType::curly_open;
+            if (str == "}") return TokenType::curly_close;
             
             return std::nullopt;
         }
@@ -56,7 +56,7 @@ namespace Radium
         {
             switch (type)
             {
-            case operator_add:
+            case TokenType::plus:
                 return 1;
             default:
                 return std::nullopt;
@@ -67,8 +67,8 @@ namespace Radium
         {
             switch(type)
             {
-            case operator_add:
-                return Left;
+            case TokenType::plus:
+                return BinaryOpAssociativity::Left;
             default:
                 return std::nullopt;
             }
@@ -81,7 +81,7 @@ namespace Radium
 
         [[nodiscard]] static bool isAtom(const TokenType& type)
         {
-            return type == literal_int || type == identifier;
+            return type == TokenType::literal_int || type == TokenType::identifier;
         }
 
         [[nodiscard]] std::optional<int> getPrecedence() const

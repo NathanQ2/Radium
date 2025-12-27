@@ -1,6 +1,6 @@
 #include "Module.h"
 
-Module::Module(std::string_view path, NodeRoot root) : m_path(path), m_rootNode(root)
+Module::Module(std::string path, NodeRoot root) : m_path(path), m_rootNode(root)
 {
 }
 

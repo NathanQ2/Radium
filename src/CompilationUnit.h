@@ -6,7 +6,7 @@ class CompilationUnit
 public:
     CompilationUnit();
     
-    void addModule(NodeRoot root);
+    void addModule(Module mod);
     
     const std::vector<Module>& getModules() const;
     const Module& getModuleByPath(std::string_view path) const;

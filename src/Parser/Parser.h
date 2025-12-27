@@ -2,21 +2,22 @@
 
 #include <vector>
 
+#include "../ArenaAllocator.h"
 #include "../Reader.h"
 #include "../Tokenizer/Token.h"
 #include "Nodes/Nodes.h"
-
-using namespace Radium;
 
 namespace Radium
 {
     class Parser {
     public:
-        explicit Parser(const std::vector<Token>& tokens);
+        explicit Parser(const std::vector<Token>& tokens, ArenaAllocator& alloc);
 
         NodeRoot parse();
     private:
         Reader<Token> m_reader;
+        
+        ArenaAllocator& m_alloc;
 
         [[nodiscard]] NodeModuleDecl* parseModuleDecl();
         [[nodiscard]] NodeModuleInclude* parseModuleInclude();

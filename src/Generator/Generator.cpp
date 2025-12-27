@@ -44,18 +44,18 @@ namespace Radium
         return m_ss.str();
     }
 
-    void Generator::mov(const std::string &dest, const std::string &val)
+    void Generator::mov(const std::string_view &dest, const std::string_view &val)
     {
         m_ss << "    mov " << dest << ", " << val << "\n";
     }
 
-    void Generator::push(const std::string &reg, const size_t sizeBytes)
+    void Generator::push(const std::string_view &reg, const size_t sizeBytes)
     {
         m_ss << "    push " << reg << "\n";
         m_stackSizeBytes += sizeBytes;
     }
 
-    void Generator::pop(const std::string &reg, const size_t sizeBytes)
+    void Generator::pop(const std::string_view &reg, const size_t sizeBytes)
     {
         m_ss << "    pop " << reg << "\n";
         m_stackSizeBytes -= sizeBytes;
@@ -99,7 +99,7 @@ namespace Radium
 
     void Generator::generateFunction(const NodeFunctionDecl* func)
     {
-        std::string funcName = func->identifier->value;
+        std::string_view funcName = func->identifier->value;
         if (funcName == "main") funcName = "_start";
         
         m_ss << funcName << ":\n";

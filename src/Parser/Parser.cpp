@@ -5,31 +5,38 @@
 
 #include "../Logger/Logger.h"
 
+
 namespace Radium
 {
-    Parser::Parser(const std::vector<Token>& tokens) : m_reader(tokens)
+    Parser::Parser(const std::vector<Token>& tokens, ArenaAllocator& alloc) : m_reader(tokens), m_alloc(alloc)
     {}
 
     NodeRoot Parser::parse()
     {
-        NodeRoot program;
-        program.functions = std::vector<NodeFunctionDecl*>();
+        NodeRoot program {
+            .modDecl = nullptr,
+            .includes = std::vector<NodeModuleInclude*>(),
+            .functions = std::vector<NodeFunctionDecl*>()
+        };
+        
         while (m_reader.peek().has_value())
         {
             switch (m_reader.peek().value().type)
             {
-            case mod:
+            case TokenType::mod:
                 program.modDecl = parseModuleDecl();
                 
                 break;
-            case include:
+            case TokenType::include:
                 program.includes.push_back(parseModuleInclude());
                 
                 break;
-            case func:
+            case TokenType::func:
                 program.functions.push_back(parseFunctionDecl());
                 
                 break;
+            case TokenType::eof:
+                return program;
             default:
                 RA_ERROR("Invalid token in module body");
                 
@@ -42,17 +49,17 @@ namespace Radium
 
     NodeModuleDecl* Parser::parseModuleDecl()
     {
-        NodeModuleDecl* decl = new NodeModuleDecl;
+        NodeModuleDecl* decl = m_alloc.alloc<NodeModuleDecl>();
         
-        if (m_reader.peek().value().type != mod) 
+        if (m_reader.peek().value().type != TokenType::mod) 
             RA_ERROR("Expected 'mod'");
         m_reader.consume();
         
-        if (m_reader.peek().value().type != identifier)
+        if (m_reader.peek().value().type != TokenType::identifier)
             RA_ERROR("Expected identifier!");
         decl->modPath = m_reader.consume().value.value();
         
-        if (m_reader.peek().value().type != semicolon)
+        if (m_reader.peek().value().type != TokenType::semicolon)
             RA_ERROR("Expected ';'");
         m_reader.consume();
         
@@ -61,16 +68,16 @@ namespace Radium
 
     NodeModuleInclude* Parser::parseModuleInclude()
     {
-        NodeModuleInclude* include = new NodeModuleInclude;
+        NodeModuleInclude* include = m_alloc.alloc<NodeModuleInclude>();
         if (m_reader.peek().value().type != TokenType::include) 
             RA_ERROR("Expected 'include'");
         m_reader.consume();
         
-        if (m_reader.peek().value().type != identifier)
+        if (m_reader.peek().value().type != TokenType::identifier)
             RA_ERROR("Expected identifier!");
         include->modPath = m_reader.consume().value.value();
         
-        if (m_reader.peek().value().type != semicolon)
+        if (m_reader.peek().value().type != TokenType::semicolon)
             RA_ERROR("Expected ';'");
         m_reader.consume();
         
@@ -79,17 +86,20 @@ namespace Radium
 
     NodeFunctionDecl* Parser::parseFunctionDecl()
     {
-        NodeFunctionDecl* decl = new NodeFunctionDecl;
-        if (m_reader.peek().value().type != func) RA_ERROR("Expected 'func'");
+        NodeFunctionDecl* decl = m_alloc.alloc<NodeFunctionDecl>();
+        if (m_reader.peek().value().type != TokenType::func) RA_ERROR("Expected 'func'");
         m_reader.consume();
-        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident");
+        if (m_reader.peek().value().type != TokenType::identifier) RA_ERROR("Expected ident");
         
-        decl->identifier = new NodeIdentifier { m_reader.consume().value.value() };
+        NodeIdentifier* ident = m_alloc.alloc<NodeIdentifier>();
+        ident->value = m_reader.consume().value.value();
         
-        if (m_reader.peek().value().type != parenthesis_open)
+        decl->identifier = ident;
+        
+        if (m_reader.peek().value().type != TokenType::parenthesis_open)
             RA_ERROR("Expected '('");
         m_reader.consume();
-        if (m_reader.peek().value().type != parenthesis_close)
+        if (m_reader.peek().value().type != TokenType::parenthesis_close)
             RA_ERROR("Expected ')'");
         m_reader.consume();
         
@@ -101,14 +111,14 @@ namespace Radium
 
     NodeBlock* Parser::parseBlock()
     {
-        if (m_reader.peek().value().type != curly_open) RA_ERROR("Expected '{");
+        if (m_reader.peek().value().type != TokenType::curly_open) RA_ERROR("Expected '{");
         m_reader.consume();
         
-        NodeBlock* block = new NodeBlock;
+        NodeBlock* block = m_alloc.alloc<NodeBlock>();
 
         block->statements = std::vector<NodeStatement*>();
 
-        while (m_reader.peek().value().type != curly_close)
+        while (m_reader.peek().value().type != TokenType::curly_close)
         {
             NodeStatement* statement = parseStatement();
             block->statements.push_back(statement);
@@ -120,20 +130,20 @@ namespace Radium
 
     NodeStatement* Parser::parseStatement()
     {
-        NodeStatement* statement = new NodeStatement;
+        NodeStatement* statement = m_alloc.alloc<NodeStatement>();
         
         switch (m_reader.peek()->type)
         {
-        case let:
+        case TokenType::let:
             statement->stmt = parseVarDecl();
             break;
-        case ret:
+        case TokenType::ret:
             statement->stmt = parseReturn();
             break;
-        case _if:
+        case TokenType::_if:
             statement->stmt = parseIf();
             break;
-        case curly_open:
+        case TokenType::curly_open:
             statement->stmt = parseBlock();
             break;
         default:
@@ -154,10 +164,10 @@ namespace Radium
 
     NodeVarDecl* Parser::parseVarDecl()
     {
-        if (m_reader.peek().value().type != let) RA_ERROR("Expected 'let'");
+        if (m_reader.peek().value().type != TokenType::let) RA_ERROR("Expected 'let'");
         m_reader.consume();
-        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident");
-        NodeVarDecl* decl = new NodeVarDecl;
+        if (m_reader.peek().value().type != TokenType::identifier) RA_ERROR("Expected ident");
+        NodeVarDecl* decl = m_alloc.alloc<NodeVarDecl>();
         decl->assignment = parseAssignment();
 
         return decl;
@@ -165,10 +175,10 @@ namespace Radium
 
     NodeReturnStatement* Parser::parseReturn()
     {
-        if (m_reader.peek().value().type != ret) RA_ERROR("Expected 'ret'");
+        if (m_reader.peek().value().type != TokenType::ret) RA_ERROR("Expected 'ret'");
         m_reader.consume();
 
-        NodeReturnStatement* ret = new NodeReturnStatement;
+        NodeReturnStatement* ret = m_alloc.alloc<NodeReturnStatement>();
         ret->expression = parseExpression();
 
         return ret;
@@ -176,7 +186,7 @@ namespace Radium
 
     NodeExpressionStatement* Parser::parseExpressionStatement()
     {
-        NodeExpressionStatement* expr = new NodeExpressionStatement;
+        NodeExpressionStatement* expr = m_alloc.alloc<NodeExpressionStatement>();
         
         expr->expression = parseExpression();
 
@@ -185,18 +195,18 @@ namespace Radium
 
     NodeIfStatement* Parser::parseIf()
     {
-        NodeIfStatement* nodeIf = new NodeIfStatement;
+        NodeIfStatement* nodeIf = m_alloc.alloc<NodeIfStatement>();
         
-        if (m_reader.peek().value().type != _if)
+        if (m_reader.peek().value().type != TokenType::_if)
             RA_ERROR("Expected 'if'");
         m_reader.consume();
-        if (m_reader.peek().value().type != parenthesis_open)
+        if (m_reader.peek().value().type != TokenType::parenthesis_open)
             RA_ERROR("Expected '('");
         m_reader.consume();
         
         nodeIf->expr = parseExpression();
         
-        if (m_reader.peek().value().type != parenthesis_close)
+        if (m_reader.peek().value().type != TokenType::parenthesis_close)
             RA_ERROR("Expected ')'");
         m_reader.consume();
 
@@ -207,8 +217,8 @@ namespace Radium
 
     NodeExpression* Parser::parseExpression()
     {
-        NodeExpression* expression = new NodeExpression;
-        if (m_reader.peek().value().type == identifier && m_reader.peek(1).has_value() && m_reader.peek(1).value().type == equal_single)
+        NodeExpression* expression = m_alloc.alloc<NodeExpression>();
+        if (m_reader.peek().value().type == TokenType::identifier && m_reader.peek(1).has_value() && m_reader.peek(1).value().type == TokenType::equal_single)
         {
             expression->expr = parseAssignment();
         }
@@ -222,9 +232,9 @@ namespace Radium
 
     NodeAssignment* Parser::parseAssignment()
     {
-        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident");
+        if (m_reader.peek().value().type != TokenType::identifier) RA_ERROR("Expected ident");
         NodeIdentifier* ident = new NodeIdentifier { m_reader.consume().value.value() };
-        if (m_reader.peek().value().type != equal_single) RA_ERROR("Expected '='");
+        if (m_reader.peek().value().type != TokenType::equal_single) RA_ERROR("Expected '='");
         m_reader.consume();
         
         NodeExpression* expression = parseExpression();
@@ -236,12 +246,13 @@ namespace Radium
     {
         NodeAdditive* additive = new NodeAdditive;
         additive->left = parseMultiplicative();
-        if (m_reader.peek().value().type == operator_add)
+        TokenType operator_add;
+        if (m_reader.peek().value().type == TokenType::plus)
         {
             m_reader.consume();
             additive->right = parseMultiplicative();
         }
-        else if (m_reader.peek().value().type == operator_subtract)
+        else if (m_reader.peek().value().type == TokenType::minus)
         {
             additive->isSubtraction = true;
             
@@ -267,17 +278,17 @@ namespace Radium
     NodePrimary* Parser::parsePrimary()
     {
         // Number
-        if (m_reader.peek().value().type == literal_int)
+        if (m_reader.peek().value().type == TokenType::literal_int)
         {
             return new NodePrimary { parseNumber() };
         }
         // Ident
-        if (m_reader.peek().value().type == identifier && m_reader.peek(1).value().type != parenthesis_open)
+        if (m_reader.peek().value().type == TokenType::identifier && m_reader.peek(1).value().type != TokenType::parenthesis_open)
         {
             return new NodePrimary { parseIdentifier() };
         }
         // Call
-        if (m_reader.peek().value().type == identifier && m_reader.peek(1).value().type == parenthesis_open)
+        if (m_reader.peek().value().type == TokenType::identifier && m_reader.peek(1).value().type == TokenType::parenthesis_open)
         {
             return new NodePrimary { parseCall() };
         }
@@ -288,14 +299,14 @@ namespace Radium
 
     NodeNumber* Parser::parseNumber()
     {
-        if (m_reader.peek().value().type != literal_int) RA_ERROR("Expected int literal.");
+        if (m_reader.peek().value().type != TokenType::literal_int) RA_ERROR("Expected int literal.");
 
         return new NodeNumber { m_reader.consume().value.value() };
     }
     
     NodeIdentifier* Parser::parseIdentifier()
     {
-        if (m_reader.peek().value().type != identifier) RA_ERROR("Expected ident.");
+        if (m_reader.peek().value().type != TokenType::identifier) RA_ERROR("Expected ident.");
 
         return new NodeIdentifier { m_reader.consume().value.value() };
     }
@@ -305,11 +316,11 @@ namespace Radium
         NodeCall* call = new NodeCall;
         call->identifier = parseIdentifier();
         
-        if (m_reader.peek().value().type != parenthesis_open)
+        if (m_reader.peek().value().type != TokenType::parenthesis_open)
             RA_ERROR("Expected '('");
         m_reader.consume();
         
-        if (m_reader.peek().value().type != parenthesis_close)
+        if (m_reader.peek().value().type != TokenType::parenthesis_close)
         {
             call->argList = parseArgList();
         }
@@ -324,7 +335,7 @@ namespace Radium
         argList->args = std::vector<NodeExpression*>();
 
         argList->args.push_back(parseExpression());
-        while (m_reader.peek().value().type == comma)
+        while (m_reader.peek().value().type == TokenType::comma)
         {
             m_reader.consume();
             argList->args.push_back(parseExpression());

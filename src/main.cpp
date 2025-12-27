@@ -11,32 +11,34 @@
 
 using namespace Radium;
 
+// std::string_view tokenTypeToString(TokenType type)
+// {
+//     switch (type)
+//     {
+//     case TokenType::parenthesis_open:  return "parenthesis_open";
+//     case TokenType::parenthesis_close: return "parenthesis_close";
+//     case TokenType::let :              return "let";
+//     case TokenType::identifier:        return "identifier";
+//     case TokenType::equal_single:      return "equal_single";
+//     case TokenType::semicolon:         return "semicolon";
+//     case TokenType::literal_int:       return "literal_int";
+//     case TokenType::plus:              return "operator_add";
+//     case TokenType::minus:             return "operator_subtract";
+//     case TokenType::func:              return "func";
+//     case TokenType::ret:               return "ret";
+//     case TokenType::comma:             return "comma";
+//     case TokenType::_if:               return "if";
+//     case TokenType::curly_open:        return "curly_open";
+//     case TokenType::curly_close:       return "curly_close";
+//     case TokenType::mod:               return "mod";
+//     case TokenType::include:           return "include";
+//     }
+//     
+//     return "INVALID";
+// }
 
-std::string_view tokenTypeToString(TokenType type)
-{
-    switch (type)
-    {
-    case parenthesis_open:  return "parenthesis_open";
-    case parenthesis_close: return "parenthesis_close";
-    case let :              return "let";
-    case identifier:        return "identifier";
-    case equal_single:      return "equal_single";
-    case semicolon:         return "semicolon";
-    case literal_int:       return "literal_int";
-    case operator_add:      return "operator_add";
-    case operator_subtract: return "operator_subtract";
-    case func:              return "func";
-    case ret:               return "ret";
-    case comma:             return "comma";
-    case _if:               return "if";
-    case curly_open:        return "curly_open";
-    case curly_close:       return "curly_close";
-    case mod:               return "mod";
-    case include:           return "include";
-    }
-    
-    return "INVALID";
-}
+// TODO: Make better way of determining the arena size 
+#define ARENA_SIZE 1024
 
 int main(int argc, char* argv[])
 {
@@ -49,9 +51,9 @@ int main(int argc, char* argv[])
     // }
     
     CompilationUnit cu = CompilationUnit();
-     
-    Tokenizer tokenizer = Tokenizer();
     
+    ArenaAllocator arena = ArenaAllocator(ARENA_SIZE);
+     
     // For each source file
     for (int i = 1; i < argc; i++)
     {
@@ -65,7 +67,8 @@ int main(int argc, char* argv[])
             ifs.close();
         }
 
-        std::vector<Token> tokens = tokenizer.tokenize(source);
+        Tokenizer tokenizer(source);
+        std::vector<Token> tokens = tokenizer.tokenize();
 
         // std::cout << "Tokens:" << std::endl;
         // for (const auto& token : tokens) {
@@ -75,11 +78,16 @@ int main(int argc, char* argv[])
         // }
         // std::cout << std::endl;
         
-        Parser parser(tokens);
+        Parser parser(tokens, arena);
         NodeRoot root = parser.parse();
-        //root.modDecl = NodeModuleDecl { .modPath = "main" };
+        if (root.modDecl == nullptr)
+        {
+            RA_ERROR("No module declaration for '{0}'", argv[i]);
+            exit(1);
+        }
+        Module mod = Module(root.modDecl->modPath, root);
         
-        cu.addModule(root);
+        cu.addModule(mod);
     }
     
     Generator generator(cu);

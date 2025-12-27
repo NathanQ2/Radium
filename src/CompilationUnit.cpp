@@ -6,9 +6,9 @@ CompilationUnit::CompilationUnit()
 {
 }
 
-void CompilationUnit::addModule(NodeRoot root)
+void CompilationUnit::addModule(Module mod)
 {
-    m_modules.emplace_back(root.modDecl->modPath, root);
+    m_modules.push_back(mod);
 }
 
 const std::vector<Module>& CompilationUnit::getModules() const

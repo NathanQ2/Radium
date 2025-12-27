@@ -21,7 +21,7 @@ namespace Radium
 
         std::stringstream m_ss;
 
-        std::unordered_map<std::string, size_t> m_identifierStackPositions;
+        std::unordered_map<std::string_view, size_t> m_identifierStackPositions;
         std::unordered_map<std::string, bool> m_registers;
         size_t m_stackSizeBytes;
 
@@ -37,10 +37,10 @@ namespace Radium
             return ss.str();
         }
 
-        void mov(const std::string& dest, const std::string& val);
+        void mov(const std::string_view& dest, const std::string_view& val);
 
-        void push(const std::string& reg, size_t sizeBytes);
-        void pop(const std::string& reg, size_t sizeBytes);
+        void push(const std::string_view& reg, size_t sizeBytes);
+        void pop(const std::string_view& reg, size_t sizeBytes);
 
         std::string reserveRegister();
         void freeRegister(const std::string& reg);

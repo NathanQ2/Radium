@@ -2,24 +2,25 @@
 
 namespace Radium
 {
-    enum TokenType
+    enum class TokenType
     {
+        eof,
         parenthesis_open,
         parenthesis_close,
-        let,
         identifier,
         equal_single,
         semicolon,
         literal_int,
-        operator_add,
-        operator_subtract,
+        plus,
+        minus,
+        comma,
+        curly_open,
+        curly_close,
+        let,
         func,
         ret,
         mod,
         include,
-        comma,
-        _if,
-        curly_open,
-        curly_close
+        _if
     };
 }

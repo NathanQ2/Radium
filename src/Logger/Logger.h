@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO: Move away from spdlog
+
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <memory>
