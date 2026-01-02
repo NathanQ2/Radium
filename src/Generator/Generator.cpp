@@ -18,7 +18,6 @@ namespace Radium
         m_registers["rdx"] = false;
         m_registers["rsi"] = false;
         m_registers["rdi"] = false;
-        m_registers["rsp"] = false;
         m_registers["rbp"] = false;
     }
 

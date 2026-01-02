@@ -1,7 +1,6 @@
 mod test;
 
 // This is a comment!
-// Define entrypoint
 func main() {
     let x = 5;
     
@@ -16,8 +15,6 @@ func main() {
     };
     
     exit(0);
-
-    //ret y;
 }
 
 func myFunc() {
